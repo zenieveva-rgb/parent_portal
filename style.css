@@ -1920,83 +1920,9 @@ body, html {
 .toast-notification.info i {
     color: #2196F3;
 }
-/* Manual Attendance Button Styling */
-.action-btn.success {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
-}
+    /* ==================== MANUAL ATTENDANCE MODAL - FIXED ==================== */
 
-.action-btn.success:hover {
-    transform: translateY(-3px) scale(1.1);
-    box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
-}
-
-/* Manual Input Group Styling */
-.manual-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin: 20px 0;
-}
-
-.manual-input-group input {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    color: white;
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-
-.manual-input-group input:focus {
-    outline: none;
-    border-color: #22c55e;
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
-}
-
-.manual-input-group input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-/* Notification Animations */
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}    
-/* Manual entry indicator in table */
-.manual-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.75rem;
-    padding: 2px 8px;
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
-    border-radius: 12px;
-    margin-left: 8px;
-    border: 1px solid rgba(34, 197, 94, 0.3);
-}
-/* Add this if not already present */
+/* REMOVE these conflicting lines:
 #manualAttendanceModal {
     display: none;
 }
@@ -2004,9 +1930,11 @@ body, html {
 #manualAttendanceModal.active {
     display: flex;
 }
-    
+*/
+
+/* Main modal container - MUST be display: none by default */
 .manual-modal {
-    display: none;
+    display: none; /* Hidden by default */
     position: fixed;
     top: 0;
     left: 0;
@@ -2023,10 +1951,13 @@ body, html {
     padding: 20px;
 }
 
+/* When active, show as flex and full opacity */
 .manual-modal.active {
+    display: flex !important; /* Force flex display */
     opacity: 1;
 }
 
+/* Modal content box */
 .manual-modal-content {
     background: linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2044,11 +1975,12 @@ body, html {
     position: relative;
 }
 
+/* Animate content when modal opens */
 .manual-modal.active .manual-modal-content {
     transform: scale(1) translateY(0);
 }
 
-/* Animated gradient border effect */
+/* Animated gradient border at top */
 .manual-modal-content::before {
     content: '';
     position: absolute;
@@ -2146,6 +2078,7 @@ body, html {
     font-size: 1rem;
     transition: all 0.3s ease;
     z-index: 2;
+    pointer-events: none; /* Prevent icon from blocking input */
 }
 
 .manual-input {
@@ -2178,32 +2111,14 @@ body, html {
     box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1), 0 0 20px rgba(34, 197, 94, 0.2);
 }
 
-.manual-input:focus + .input-icon,
 .input-wrap:focus-within .input-icon {
     color: #22c55e;
     transform: scale(1.1);
 }
 
-/* Floating label animation */
-.input-wrap::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #22c55e, transparent);
-    transition: all 0.3s ease;
-    transform: translateX(-50%);
-}
-
-.manual-input:focus ~ .input-wrap::after {
-    width: 80%;
-}
-
 /* Error Message */
 .manual-error {
-    display: flex;
+    display: none; /* Hidden by default */
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
@@ -2220,6 +2135,7 @@ body, html {
 }
 
 .manual-error.show {
+    display: flex;
     opacity: 1;
     transform: translateY(0);
 }
