@@ -8,6 +8,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <div id="authSection" style="position: fixed; top: 20px; right: 20px; z-index: 100;">
+    <button id="loginBtn" class="action-btn" style="width: auto; padding: 10px 20px;">
+        <i class="fa-solid fa-sign-in-alt"></i> Login
+    </button>
+    <div id="userInfo" style="display: none; color: white;">
+        <span id="userEmail"></span>
+        <button id="logoutBtn" class="action-btn" style="width: auto; padding: 10px 20px; margin-left: 10px;">
+            <i class="fa-solid fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+</div>
     <!-- Password Protection Modal -->
     <div id="passwordModal" class="security-modal">
         <div class="security-modal-content">
