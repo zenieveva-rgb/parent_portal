@@ -3,162 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parent Portal | Live Monitor</title>
-    <link rel="stylesheet" href="./style.css">
+    <title>SecretaryWeb QR Scanner</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
 </head>
 <body>
-    <!-- Password Protection Modal -->
-    <div id="passwordModal" class="security-modal">
-        <div class="security-modal-content">
-            <div class="security-header">
-                <i class="fa-solid fa-shield-halved"></i>
-                <h2>Security Verification</h2>
-            </div>
-            <p class="security-desc">Enter admin password to proceed with deletion</p>
-            <div class="password-input-group">
-                <input type="password" id="securityPassword" placeholder="Enter password..." autocomplete="off">
-                <button id="togglePassword" class="toggle-pass">
-                    <i class="fa-solid fa-eye"></i>
+    <header>
+        <div class="logo">
+            <i class="fas fa-qrcode"></i>
+            <span>SecretaryWeb</span>
+        </div>
+        <div class="nav-buttons">
+            <button id="loginBtn" class="btn btn-secondary">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <button id="signupBtn" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Sign Up
+            </button>
+            <div id="userInfo" class="hidden" style="display: flex; align-items: center; gap: 1rem;">
+                <span id="userEmail" style="color: var(--text-secondary);"></span>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
-            <div id="passwordError" class="password-error"></div>
-            <div class="security-actions">
-                <button id="cancelPassword" class="sec-btn secondary">Cancel</button>
-                <button id="confirmPassword" class="sec-btn primary">Verify</button>
-            </div>
-            <a href="#" id="forgotPassword" class="forgot-link">Forgot password?</a>
         </div>
-    </div>
+    </header>
 
-    <!-- Password Reset Modal -->
-    <div id="resetModal" class="security-modal">
-        <div class="security-modal-content">
-            <div class="security-header">
-                <i class="fa-solid fa-envelope-circle-check"></i>
-                <h2>Password Reset</h2>
+    <main class="container">
+        <!-- Pending Approval Status -->
+        <div id="approvalStatus" class="hidden"></div>
+
+        <!-- QR Scanner Section -->
+        <div id="qrScanner" class="hidden">
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-camera"></i>
+                    QR Code Scanner
+                </h2>
+                <div class="scanner-container">
+                    <div class="scanner-frame">
+                        <div class="scanner-placeholder">
+                            <i class="fas fa-camera-retro"></i>
+                            <p>Camera preview will appear here</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Point your camera at a QR code</p>
+                        </div>
+                    </div>
+                    <div id="scanResult"></div>
+                </div>
             </div>
-            <p class="security-desc">Reset link will be sent to:<br><strong>depeddcp11@gmail.com</strong></p>
-            <div class="security-actions">
-                <button id="cancelReset" class="sec-btn secondary">Cancel</button>
-                <button id="sendReset" class="sec-btn primary">Send Reset Link</button>
+
+            <!-- Manual Attendance Button -->
+            <div class="manual-attendance-wrapper">
+                <button id="manualAttendanceBtn" class="btn btn-success">
+                    <i class="fas fa-keyboard"></i>
+                    Manual Attendance Entry
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- PROFESSIONAL Manual Attendance Modal -->
+        <!-- Attendance History -->
+        <div id="attendanceHistory" class="hidden">
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-history"></i>
+                    Attendance History
+                </h2>
+                <div id="historyList" class="history-container">
+                    <!-- History items will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PROFESSIONAL MANUAL ATTENDANCE MODAL -->
     <div id="manualAttendanceModal" class="manual-modal">
         <div class="manual-modal-content">
-            <div class="manual-header">
-                <div class="manual-icon-wrap">
-                    <i class="fa-solid fa-user-plus"></i>
-                </div>
-                <h2>Manual Attendance</h2>
-                <p class="manual-subtitle">Enter student details to record attendance</p>
-            </div>
+            <!-- Animated gradient border at top -->
             
-            <div class="manual-form">
-                <div class="input-group">
-                    <label class="input-label">Student Name</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="manualStudentName" class="manual-input" placeholder="e.g. Juan Dela Cruz" autocomplete="off">
-                    </div>
+            <div class="manual-header">
+                <button id="closeManualModal" class="manual-close">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="manual-icon-wrapper">
+                    <i class="fas fa-user-check"></i>
                 </div>
                 
-                <div class="input-group">
-                    <label class="input-label">Grade & Section</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-graduation-cap input-icon"></i>
-                        <input type="text" id="manualGradeSection" class="manual-input" placeholder="e.g. Grade 10-A" autocomplete="off">
-                    </div>
-                </div>
-                
-                <div id="manualError" class="manual-error">
-                    <i class="fa-solid fa-circle-exclamation"></i>
+                <h3 class="manual-title">Manual Attendance</h3>
+                <p class="manual-subtitle">Enter student details manually</p>
+            </div>
+
+            <form id="manualAttendanceForm" class="manual-form">
+                <!-- Error Message -->
+                <div id="manualError" class="manual-message manual-error">
+                    <i class="fas fa-exclamation-circle"></i>
                     <span></span>
                 </div>
-                
-                <div class="manual-actions">
-                    <button id="cancelManual" class="manual-btn manual-btn-secondary">
-                        <i class="fa-solid fa-xmark"></i> Cancel
+
+                <!-- Success Message -->
+                <div id="manualSuccess" class="manual-message manual-success">
+                    <i class="fas fa-check-circle"></i>
+                    <span></span>
+                </div>
+
+                <!-- Student ID Input -->
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="manualStudentId" 
+                        class="manual-input" 
+                        placeholder=" "
+                        required
+                        autocomplete="off"
+                    >
+                    <i class="fas fa-id-card"></i>
+                    <label for="manualStudentId">Student ID</label>
+                </div>
+
+                <!-- Student Name Input -->
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="manualStudentName" 
+                        class="manual-input" 
+                        placeholder=" "
+                        required
+                        autocomplete="off"
+                    >
+                    <i class="fas fa-user"></i>
+                    <label for="manualStudentName">Student Name</label>
+                </div>
+
+                <!-- Button Group -->
+                <div class="manual-btn-group">
+                    <button type="button" id="cancelManualBtn" class="manual-btn manual-btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancel
                     </button>
-                    <button id="confirmManual" class="manual-btn manual-btn-primary">
-                        <i class="fa-solid fa-plus"></i> Add Attendance
+                    <button type="submit" class="manual-btn manual-btn-primary">
+                        <i class="fas fa-check"></i>
+                        Record Attendance
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="securityLoading" class="security-loading">
-        <div class="spinner"></div>
-        <p>Verifying...</p>
-    </div>
-
-    <div class="animated-bg"></div>
-    <div class="particles" id="particles"></div>
-
-    <div class="page-background">
-        <div class="main-container">
-            <!-- Header -->
-            <div class="glass-header">
-                <div class="header-content">
-                    <div class="live-indicator">
-                        <span class="pulse-dot"></span>
-                        <span class="live-text">LIVE</span>
-                    </div>
-                    <h1 class="portal-title neon-cyan">ATTENDANCE<span class="gold-accent">MONITOR</span></h1>
-                    <div class="scan-counter" id="scanCounter">0 scans today</div>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="top-controls">
-                <div class="control-group">
-                    <button id="navToHistory" class="action-btn magnetic-btn" title="View Archive">
-                        <i class="fa-solid fa-box-archive"></i>
-                    </button>
-                    <button id="trashBinBtn" class="action-btn magnetic-btn danger" title="Trash Bin">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                    <button id="manualAttendanceBtn" class="action-btn magnetic-btn success" title="Manual Attendance">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </button>
-                </div>
-
-                <div class="search-container">
-                    <div class="search-box" id="searchBox">
-                        <input type="text" id="nameInput" placeholder="Search student..." class="search-input" autocomplete="off">
-                        <i class="fa-solid fa-magnifying-glass search-trigger"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div class="table-container glass-panel">
-                <div class="table-header">
-                    <span class="col-name">STUDENT NAME</span>
-                    <span class="col-grade">GRADE/SECTION</span>
-                    <span class="col-time">SCAN TIME</span>
-                </div>
-                <div class="attendance-list" id="attendanceTable">
-                    <div class="empty-state">
-                        <i class="fa-solid fa-satellite-dish fa-bounce"></i>
-                        <p>Waiting for scans...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="portal-footer">
-                <span class="sync-status"><i class="fa-solid fa-wifi"></i> Connected to Firebase</span>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="./script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
-print("✅ index.html updated with professional manual attendance modal")
