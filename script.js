@@ -16,12 +16,35 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
+// Global variable to store current user
+let currentUser = null;
+
 // Manual Attendance Elements
 const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
 const manualAttendanceModal = document.getElementById('manualAttendanceModal');
 const cancelManualBtn = document.getElementById('cancelManual');
 const confirmManualBtn = document.getElementById('confirmManual');
 const manualError = document.getElementById('manualError');
+
+// Wait for auth state before allowing actions
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    console.log('Auth state changed:', user ? 'Logged in as ' + user.email : 'Not logged in');
+    
+    if (user) {
+        // User is signed in - enable manual attendance
+        if (manualAttendanceBtn) {
+            manualAttendanceBtn.style.opacity = '1';
+            manualAttendanceBtn.style.pointerEvents = 'auto';
+        }
+    } else {
+        // User is signed out - disable manual attendance
+        if (manualAttendanceBtn) {
+            manualAttendanceBtn.style.opacity = '0.5';
+            manualAttendanceBtn.style.pointerEvents = 'none';
+        }
+    }
+});
 
 // Initialize Manual Attendance
 function initManualAttendance() {
@@ -32,6 +55,12 @@ function initManualAttendance() {
     
     // Open modal
     manualAttendanceBtn.addEventListener('click', () => {
+        // Check if user is logged in before opening
+        if (!currentUser) {
+            showManualError('Please log in first');
+            return;
+        }
+        
         manualAttendanceModal.classList.add('active');
         document.body.style.overflow = 'hidden';
         
@@ -70,6 +99,12 @@ function initManualAttendance() {
     // Submit attendance
     if (confirmManualBtn) {
         confirmManualBtn.addEventListener('click', async () => {
+            // Double check user is still logged in
+            if (!currentUser) {
+                showManualError('You must be logged in to record attendance');
+                return;
+            }
+            
             const studentName = document.getElementById('manualStudentName')?.value.trim();
             const gradeSection = document.getElementById('manualGradeSection')?.value.trim();
             
@@ -83,12 +118,8 @@ function initManualAttendance() {
             confirmManualBtn.disabled = true;
             
             try {
-                const user = auth.currentUser;
-                if (!user) {
-                    throw new Error('You must be logged in to record attendance');
-                }
-                
-                const userRef = ref(database, 'users/' + user.uid);
+                // Check approval status using currentUser
+                const userRef = ref(database, 'users/' + currentUser.uid);
                 const userSnapshot = await get(userRef);
                 
                 if (!userSnapshot.exists() || userSnapshot.val().status !== 'approved') {
@@ -98,8 +129,8 @@ function initManualAttendance() {
                 const attendanceData = {
                     studentName: studentName,
                     grade: gradeSection,
-                    scannedBy: user.email,
-                    scannedByUid: user.uid,
+                    scannedBy: currentUser.email,
+                    scannedByUid: currentUser.uid,
                     timestamp: new Date().toISOString(),
                     type: 'manual'
                 };
