@@ -3,44 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance History - SecretaryWeb</title>
+    <title>Parent Portal | Attendance Archive</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <i class="fas fa-qrcode"></i>
-            <span>SecretaryWeb</span>
-        </div>
-        <div class="nav-buttons">
-            <a href="index.html" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Scanner
-            </a>
-            <div id="userInfo" class="hidden" style="display: flex; align-items: center; gap: 1rem;">
-                <span id="userEmail" style="color: var(--text-secondary);"></span>
-                <button id="logoutBtn" class="btn btn-secondary">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
-    </header>
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+    <div class="particles" id="particles"></div>
 
-    <main class="container">
-        <div id="attendanceHistory">
-            <div class="card">
-                <h2 class="card-title">
-                    <i class="fas fa-archive"></i>
-                    Attendance Archive
-                </h2>
-                <div id="historyList" class="history-container">
-                    <!-- History items will be loaded here -->
-                    <p class="no-records">Loading attendance records...</p>
+    <div class="page-background">
+        <div class="main-container">
+            <!-- Archive Header -->
+            <div class="glass-header archive-header">
+                <div class="header-content">
+                    <div class="archive-indicator">
+                        <i class="fa-solid fa-box-archive archive-icon"></i>
+                        <span class="archive-text">ARCHIVE</span>
+                    </div>
+                    <h1 class="portal-title neon-cyan">ATTENDANCE<span class="gold-accent">HISTORY</span></h1>
+                    <div class="folder-counter" id="totalRecords">0 total records</div>
                 </div>
             </div>
-        </div>
-    </main>
 
-    <script type="module" src="script.js"></script>
+            <!-- Controls -->
+            <div class="top-controls-container">
+                <button id="navToPortal" class="action-btn back-btn magnetic-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Live
+                </button>
+                
+                <div class="search-morph-container">
+                    <div class="search-morph" id="searchMorph">
+                        <input type="text" id="searchInput" class="search-morph-input" placeholder="Search student..." autocomplete="off">
+                        <button id="searchTrigger" class="search-morph-btn">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alphabet Index -->
+            <div class="alphabet-scroller" id="alphabetScroller">
+                <div class="alphabet-track" id="alphabetTrack">
+                    <!-- Generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Folder Grid Container -->
+            <div class="table-container folder-container glass-panel">
+                <div class="table-header folder-header">
+                    <span class="col-folder">STUDENT FOLDER</span>
+                    <span class="col-info">GRADE/SCANS</span>
+                    <span class="col-action">VIEW</span>
+                </div>
+                <div class="folder-grid" id="folderGrid">
+                    <div class="empty-state-archive">
+                        <i class="fa-solid fa-box-open"></i>
+                        <h3>No Records Found</h3>
+                        <p>Attendance history will appear here once students are scanned</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="portal-footer">
+                <span class="sync-status"><i class="fa-solid fa-wifi"></i> Connected to Firebase</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal -->
+    <div id="studentModal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <div class="student-avatar gold-avatar" id="modalAvatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <h3 class="student-name" id="modalStudentName">Student Name</h3>
+                    <span class="student-grade" id="modalStudentGrade">Grade --</span>
+                </div>
+                <button id="closeModal" class="close-btn">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="modal-stats">
+                <div class="stat-box">
+                    <span class="stat-number" id="totalScans">0</span>
+                    <span class="stat-label">Total Scans</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="lastScan">--</span>
+                    <span class="stat-label">Last Active</span>
+                </div>
+            </div>
+            
+            <div class="logs-container">
+                <h4 class="logs-title">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Attendance Logs
+                </h4>
+                <div class="logs-list" id="logsList">
+                    <!-- Logs injected here -->
+                </div>
+            </div>
+            
+            <button id="closeModalBtn" class="close-modal-btn gold-btn">Close Details</button>
+        </div>
+    </div>
+
+    <script type="module" src="history-logic.js"></script>
 </body>
 </html>
