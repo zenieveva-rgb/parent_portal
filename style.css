@@ -1983,6 +1983,28 @@ body, html {
         opacity: 0;
     }
 }    
+/* Manual entry indicator in table */
+.manual-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border-radius: 12px;
+    margin-left: 8px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+/* Add this if not already present */
+#manualAttendanceModal {
+    display: none;
+}
+
+#manualAttendanceModal.active {
+    display: flex;
+}
+    
 .manual-modal {
     display: none;
     position: fixed;
