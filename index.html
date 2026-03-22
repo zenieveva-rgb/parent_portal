@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Pro | Live Monitor</title>
+    <title>Attendance Pro | Section Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -42,7 +42,6 @@
             overflow-x: hidden;
         }
 
-        /* Animated Background */
         .bg-animation {
             position: fixed;
             top: 0;
@@ -101,7 +100,7 @@
             100% { opacity: 0; transform: translateY(-100vh) scale(1.5); }
         }
 
-        /* Auth Modal */
+        /* Auth Overlay */
         .auth-overlay {
             position: fixed;
             top: 0;
@@ -268,10 +267,6 @@
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
-        .auth-input:focus + .input-icon {
-            color: var(--primary);
-        }
-
         .password-toggle {
             position: absolute;
             right: 16px;
@@ -355,21 +350,116 @@
             75% { transform: translateX(10px); }
         }
 
-        .auth-divider {
-            display: flex;
+        /* Section Selector Modal */
+        .section-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
             align-items: center;
-            gap: 15px;
-            margin: 25px 0;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
-        .auth-divider::before,
-        .auth-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--glass-border);
+        .section-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .section-container {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .section-modal.active .section-container {
+            transform: scale(1);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .section-btn {
+            padding: 20px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .section-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .section-btn i {
+            font-size: 1.5rem;
+        }
+
+        /* Parent Verification Form */
+        .parent-form {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .parent-form h3 {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .parent-form h3 i {
+            color: var(--accent);
         }
 
         /* Main Container */
@@ -427,57 +517,33 @@
             color: var(--text-secondary);
         }
 
-        .user-section {
-            display: flex;
+        .section-badge {
+            display: inline-flex;
             align-items: center;
-            gap: 15px;
-        }
-
-        .user-info {
-            display: none;
-            align-items: center;
-            gap: 10px;
+            gap: 8px;
             padding: 10px 20px;
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 50px;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .user-info.show {
-            display: flex;
-            animation: slideIn 0.4s ease;
+        .section-badge:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
+        .section-badge i {
+            font-size: 0.9rem;
         }
 
-        .user-avatar {
-            width: 35px;
-            height: 35px;
-            background: var(--gradient-2);
-            border-radius: 50%;
+        .user-section {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .user-role {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            gap: 15px;
         }
 
         .btn {
@@ -516,16 +582,6 @@
             border-color: var(--primary);
         }
 
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.2);
-        }
-
         .btn-success {
             background: rgba(16, 185, 129, 0.1);
             color: var(--success);
@@ -536,7 +592,7 @@
             background: rgba(16, 185, 129, 0.2);
         }
 
-        /* Stats Cards */
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -599,18 +655,6 @@
         .stat-label {
             color: var(--text-secondary);
             font-size: 0.9rem;
-        }
-
-        .stat-change {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.8rem;
-            margin-top: 10px;
-            padding: 4px 8px;
-            border-radius: 20px;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
         }
 
         /* Controls Section */
@@ -972,6 +1016,10 @@
                 padding-top: 10px;
                 border-top: 1px solid var(--glass-border);
             }
+            
+            .section-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         /* Loading Spinner */
@@ -988,7 +1036,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Pulse Animation for Live Indicator */
+        /* Live Badge */
         .live-badge {
             display: inline-flex;
             align-items: center;
@@ -1015,6 +1063,16 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .status-present {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .status-absent {
+            color: var(--danger);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -1097,11 +1155,59 @@
                 </button>
             </form>
 
-            <div class="auth-divider">or continue with</div>
+            <div class="auth-divider" style="display: flex; align-items: center; gap: 15px; margin: 25px 0; color: var(--text-secondary); font-size: 0.85rem;">
+                <span style="flex: 1; height: 1px; background: var(--glass-border);"></span>
+                or continue with
+                <span style="flex: 1; height: 1px; background: var(--glass-border);"></span>
+            </div>
             
             <button class="auth-btn" style="background: #4285F4;" onclick="googleSignIn()">
                 <i class="fa-brands fa-google"></i>
                 <span>Google</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Section Selection Modal -->
+    <div class="section-modal" id="sectionModal">
+        <div class="section-container">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-school" style="color: var(--primary);"></i> Select Section</h2>
+                <p>Choose a section to view or manage attendance</p>
+            </div>
+
+            <div class="section-grid" id="sectionGrid">
+                <!-- Sections generated by JS -->
+            </div>
+
+            <div class="parent-form" id="parentVerificationForm" style="display: none;">
+                <h3><i class="fa-solid fa-user-shield"></i> Parent Verification</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">
+                    Enter your child's details to view their attendance record.
+                </p>
+                <div class="input-group">
+                    <label class="input-label">Student Name</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" class="auth-input" id="verifyStudentName" placeholder="e.g. Juan Dela Cruz" style="padding-left: 48px;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">LRN / Student ID</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-id-card input-icon"></i>
+                        <input type="text" class="auth-input" id="verifyStudentId" placeholder="Enter LRN or Student ID" style="padding-left: 48px;">
+                    </div>
+                </div>
+                <button class="auth-btn" onclick="verifyParent()">
+                    <i class="fa-solid fa-search"></i>
+                    Find Student
+                </button>
+            </div>
+
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="closeSectionModal()">
+                <i class="fa-solid fa-xmark"></i>
+                Close
             </button>
         </div>
     </div>
@@ -1124,10 +1230,10 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label class="input-label">Grade & Section</label>
+                    <label class="input-label">Student ID / LRN</label>
                     <div class="input-wrap">
-                        <i class="fa-solid fa-graduation-cap input-icon"></i>
-                        <input type="text" class="auth-input" id="manualGrade" placeholder="e.g. Grade 10-A" style="padding-left: 48px;">
+                        <i class="fa-solid fa-id-card input-icon"></i>
+                        <input type="text" class="auth-input" id="manualId" placeholder="Enter LRN" style="padding-left: 48px;">
                     </div>
                 </div>
             </div>
@@ -1154,23 +1260,20 @@
                 </div>
                 <div class="brand-text">
                     <h1>Attendance Pro</h1>
-                    <span>Real-time Monitoring System</span>
+                    <span id="currentSectionDisplay">No Section Selected</span>
                 </div>
             </div>
 
             <div class="user-section">
-                <div class="live-badge">
+                <div class="live-badge" id="liveBadge" style="display: none;">
                     <span class="live-dot"></span>
                     Live
                 </div>
                 
-                <div class="user-info" id="userInfo">
-                    <div class="user-avatar" id="userAvatar">U</div>
-                    <div class="user-details">
-                        <span class="user-name" id="userName">User</span>
-                        <span class="user-role">Administrator</span>
-                    </div>
-                </div>
+                <button class="section-badge" onclick="openSectionModal()">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span id="sectionBtnText">Select Section</span>
+                </button>
                 
                 <button class="btn btn-secondary" id="authActionBtn" onclick="toggleAuth()">
                     <i class="fa-solid fa-sign-out-alt"></i>
@@ -1180,85 +1283,87 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="stats-grid">
+        <div class="stats-grid" id="statsGrid" style="display: none;">
             <div class="stat-card">
                 <div class="stat-icon">
                     <i class="fa-solid fa-users"></i>
                 </div>
                 <div class="stat-value" id="totalScans">0</div>
-                <div class="stat-label">Total Scans Today</div>
-                <div class="stat-change">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                    <span>Real-time updates</span>
-                </div>
+                <div class="stat-label">Total Present</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">
                     <i class="fa-solid fa-user-check"></i>
                 </div>
                 <div class="stat-value" id="uniqueStudents">0</div>
-                <div class="stat-label">Unique Students</div>
-                <div class="stat-change">
-                    <i class="fa-solid fa-rotate"></i>
-                    <span>Active now</span>
-                </div>
+                <div class="stat-label">Students Scanned</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">
                     <i class="fa-solid fa-clock"></i>
                 </div>
                 <div class="stat-value" id="lastScan">--:--</div>
-                <div class="stat-label">Last Scan Time</div>
-                <div class="stat-change">
-                    <i class="fa-solid fa-bolt"></i>
-                    <span>Just now</span>
-                </div>
+                <div class="stat-label">Last Scan</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">
-                    <i class="fa-solid fa-box-archive"></i>
+                    <i class="fa-solid fa-percentage"></i>
                 </div>
-                <div class="stat-value" id="historyCount">0</div>
-                <div class="stat-label">History Records</div>
-                <button class="btn btn-secondary" style="margin-top: 10px; width: 100%;" onclick="navigateTo('history')">
-                    <i class="fa-solid fa-arrow-right"></i>
-                    View Archive
-                </button>
+                <div class="stat-value" id="attendanceRate">0%</div>
+                <div class="stat-label">Attendance Rate</div>
             </div>
         </div>
 
         <!-- Controls -->
-        <div class="controls-section">
+        <div class="controls-section" id="controlsSection" style="display: none;">
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" class="search-input" id="searchInput" placeholder="Search students by name..." oninput="filterTable()">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search students..." oninput="filterTable()">
             </div>
             
             <div class="actions-group">
-                <button class="btn btn-success" onclick="openManualModal()" id="manualBtn" style="opacity: 0.5; pointer-events: none;">
+                <button class="btn btn-success" onclick="openManualModal()" id="manualBtn">
                     <i class="fa-solid fa-user-plus"></i>
                     Manual Entry
                 </button>
-                <button class="btn btn-danger" onclick="navigateTo('trash')">
-                    <i class="fa-solid fa-trash-can"></i>
-                    Trash
+                <button class="btn btn-secondary" onclick="exportAttendance()">
+                    <i class="fa-solid fa-download"></i>
+                    Export
                 </button>
             </div>
         </div>
 
+        <!-- Welcome Message (No Section Selected) -->
+        <div class="empty-state" id="welcomeState">
+            <i class="fa-solid fa-school" style="font-size: 5rem; color: var(--primary);"></i>
+            <h3>Welcome to Attendance Pro</h3>
+            <p style="max-width: 500px; margin: 0 auto 25px;">
+                Please select a section to view attendance data. Parents can verify their identity to view their child's specific record.
+            </p>
+            <button class="btn btn-primary" onclick="openSectionModal()" style="padding: 16px 32px; font-size: 1rem;">
+                <i class="fa-solid fa-layer-group"></i>
+                Select Section
+            </button>
+        </div>
+
         <!-- Table -->
-        <div class="table-container">
+        <div class="table-container" id="attendanceTableContainer" style="display: none;">
             <div class="table-header">
                 <span>Student</span>
-                <span>Grade/Section</span>
-                <span>Scan Time</span>
+                <span>Status</span>
+                <span>Time</span>
                 <span>Action</span>
             </div>
             <div class="table-body" id="attendanceTable">
-                <div class="empty-state">
-                    <i class="fa-solid fa-satellite-dish"></i>
-                    <h3>Waiting for scans...</h3>
-                    <p>Attendance records will appear here automatically</p>
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Parent View: Single Student Result -->
+        <div class="table-container" id="parentViewContainer" style="display: none;">
+            <div style="padding: 30px; text-align: center;">
+                <div id="parentStudentCard">
+                    <!-- Single student card for parent view -->
                 </div>
             </div>
         </div>
@@ -1284,10 +1389,10 @@
             set, 
             onValue, 
             remove,
-            update,
+            get,
             query,
             orderByChild,
-            limitToLast
+            equalTo
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -1305,65 +1410,479 @@
         const database = getDatabase(app);
         const googleProvider = new GoogleAuthProvider();
 
+        // Global State
         let currentUser = null;
-        let attendanceData = [];
+        let currentSection = null;
+        let currentRole = null; // 'teacher', 'parent', 'admin'
+        let sectionAttendanceData = [];
+        let allSections = [
+            '12/Sincerity', '12/Honesty', '12/Respect', '12/Responsibility',
+            '11/Sincerity', '11/Honesty', '11/Respect', '11/Responsibility',
+            '10/Sincerity', '10/Honesty', '10/Respect', '10/Responsibility',
+            '9/Sincerity', '9/Honesty', '9/Respect', '9/Responsibility',
+            '8/Sincerity', '8/Honesty', '8/Respect', '8/Responsibility',
+            '7/Sincerity', '7/Honesty', '7/Respect', '7/Responsibility'
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            renderSectionGrid();
+        });
 
         // Auth State Listener
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
-            updateUI(user);
+            if (user) {
+                document.getElementById('authOverlay').classList.remove('active');
+                document.getElementById('mainContainer').classList.add('loaded');
+                checkUserRole(user.uid);
+            } else {
+                document.getElementById('authOverlay').classList.add('active');
+                document.getElementById('mainContainer').classList.remove('loaded');
+                resetToInitialState();
+            }
         });
 
-        function updateUI(user) {
-            const authOverlay = document.getElementById('authOverlay');
-            const mainContainer = document.getElementById('mainContainer');
-            const userInfo = document.getElementById('userInfo');
-            const authActionBtn = document.getElementById('authActionBtn');
-            const manualBtn = document.getElementById('manualBtn');
-
-            if (user) {
-                // User is signed in
-                authOverlay.classList.remove('active');
-                setTimeout(() => {
-                    mainContainer.classList.add('loaded');
-                }, 100);
-
-                // Update user info
-                const userName = user.displayName || user.email.split('@')[0];
-                document.getElementById('userName').textContent = userName;
-                document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
-                userInfo.classList.add('show');
-
-                // Update auth button
-                authActionBtn.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i><span>Sign Out</span>';
-                authActionBtn.classList.remove('btn-primary');
-                authActionBtn.classList.add('btn-secondary');
-
-                // Enable manual button
-                manualBtn.style.opacity = '1';
-                manualBtn.style.pointerEvents = 'auto';
-
-                // Load data
-                loadAttendance();
-                loadStats();
-            } else {
-                // User is signed out
-                authOverlay.classList.add('active');
-                mainContainer.classList.remove('loaded');
-                userInfo.classList.remove('show');
-
-                // Update auth button
-                authActionBtn.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i><span>Sign In</span>';
-                authActionBtn.classList.add('btn-primary');
-                authActionBtn.classList.remove('btn-secondary');
-
-                // Disable manual button
-                manualBtn.style.opacity = '0.5';
-                manualBtn.style.pointerEvents = 'none';
+        // Check user role from database
+        async function checkUserRole(uid) {
+            try {
+                const userRef = ref(database, 'users/' + uid);
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    currentRole = userData.role || 'parent';
+                } else {
+                    // New user, default to parent
+                    currentRole = 'parent';
+                    await set(userRef, {
+                        email: currentUser.email,
+                        name: currentUser.displayName || currentUser.email.split('@')[0],
+                        role: 'parent',
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                openSectionModal();
+            } catch (error) {
+                console.error('Error checking role:', error);
+                currentRole = 'parent';
+                openSectionModal();
             }
         }
 
-        // Login Form
+        // Render Section Grid
+        function renderSectionGrid() {
+            const grid = document.getElementById('sectionGrid');
+            grid.innerHTML = allSections.map(section => `
+                <button class="section-btn" onclick="selectSection('${section}')">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>${section}</span>
+                </button>
+            `).join('');
+        }
+
+        // Select Section
+        window.selectSection = (section) => {
+            currentSection = section;
+            
+            // Update UI
+            document.querySelectorAll('.section-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.trim() === section) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Show appropriate form based on role
+            if (currentRole === 'parent') {
+                document.getElementById('parentVerificationForm').style.display = 'block';
+                document.getElementById('sectionGrid').style.display = 'none';
+            } else {
+                // Teacher/Admin - load section directly
+                loadSectionData(section);
+                closeSectionModal();
+            }
+        };
+
+        // Verify Parent and Load Specific Student
+        window.verifyParent = async () => {
+            const studentName = document.getElementById('verifyStudentName').value.trim();
+            const studentId = document.getElementById('verifyStudentId').value.trim();
+
+            if (!studentName || !studentId) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                // Search for student in current section
+                const sectionRef = ref(database, `sections/${currentSection}/attendance`);
+                const snapshot = await get(sectionRef);
+                
+                if (!snapshot.exists()) {
+                    showToast('No attendance records found for this section', 'error');
+                    return;
+                }
+
+                const data = snapshot.val();
+                const studentRecord = Object.entries(data).find(([key, record]) => 
+                    record.studentName?.toLowerCase() === studentName.toLowerCase() &&
+                    record.studentId === studentId
+                );
+
+                if (studentRecord) {
+                    const [key, record] = studentRecord;
+                    showParentView(record, key);
+                    closeSectionModal();
+                    showToast('Student record found!', 'success');
+                } else {
+                    // Check if student exists in masterlist but not yet scanned
+                    const masterlistRef = ref(database, `sections/${currentSection}/masterlist/${studentId}`);
+                    const masterSnapshot = await get(masterlistRef);
+                    
+                    if (masterSnapshot.exists()) {
+                        showParentView({
+                            ...masterSnapshot.val(),
+                            status: 'absent',
+                            timestamp: null
+                        }, studentId);
+                        closeSectionModal();
+                        showToast('Student found but not yet scanned today', 'warning');
+                    } else {
+                        showToast('Student not found. Please check the name and ID.', 'error');
+                    }
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        // Show Parent View (Single Student)
+        function showParentView(student, key) {
+            document.getElementById('welcomeState').style.display = 'none';
+            document.getElementById('attendanceTableContainer').style.display = 'none';
+            document.getElementById('statsGrid').style.display = 'none';
+            document.getElementById('controlsSection').style.display = 'none';
+            document.getElementById('parentViewContainer').style.display = 'block';
+            document.getElementById('liveBadge').style.display = 'none';
+
+            const container = document.getElementById('parentStudentCard');
+            const isPresent = student.status === 'present' || student.timestamp;
+            const statusClass = isPresent ? 'status-present' : 'status-absent';
+            const statusText = isPresent ? 'PRESENT' : 'ABSENT';
+            const timeText = student.timestamp ? formatTime(student.timestamp) : '--:--';
+
+            container.innerHTML = `
+                <div style="background: var(--glass); border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px; max-width: 500px; margin: 0 auto;">
+                    <div style="width: 100px; height: 100px; background: var(--gradient-1); border-radius: 50%; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700;">
+                        ${student.studentName.charAt(0).toUpperCase()}
+                    </div>
+                    <h2 style="margin-bottom: 10px;">${student.studentName}</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                        <i class="fa-solid fa-graduation-cap"></i> ${currentSection} | 
+                        <i class="fa-solid fa-id-card"></i> ${student.studentId || key}
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px;">
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Status</div>
+                            <div class="${statusClass}" style="font-size: 1.5rem;">
+                                <i class="fa-solid ${isPresent ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                ${statusText}
+                            </div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px;">
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Scan Time</div>
+                            <div style="font-size: 1.5rem; color: var(--accent);">
+                                <i class="fa-regular fa-clock"></i>
+                                ${timeText}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; text-align: left;">
+                        <h4 style="margin-bottom: 15px; color: var(--text-secondary);">
+                            <i class="fa-solid fa-history"></i> Recent History
+                        </h4>
+                        <div id="studentHistory">
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Loading history...</p>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary" style="margin-top: 25px; width: 100%;" onclick="resetParentView()">
+                        <i class="fa-solid fa-search"></i>
+                        Search Another Student
+                    </button>
+                </div>
+            `;
+
+            // Load student history
+            loadStudentHistory(student.studentId || key, student.studentName);
+        }
+
+        // Load Student History
+        async function loadStudentHistory(studentId, studentName) {
+            try {
+                const historyRef = ref(database, `sections/${currentSection}/history/${studentId}`);
+                const snapshot = await get(historyRef);
+                
+                const container = document.getElementById('studentHistory');
+                
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">No history available</p>';
+                    return;
+                }
+
+                const history = snapshot.val();
+                const historyArray = Object.entries(history)
+                    .sort((a, b) => new Date(b[1].timestamp) - new Date(a[1].timestamp))
+                    .slice(0, 5);
+
+                container.innerHTML = historyArray.map(([key, record]) => `
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--glass-border);">
+                        <span style="color: var(--text-secondary);">
+                            <i class="fa-regular fa-calendar"></i>
+                            ${formatDate(record.timestamp)}
+                        </span>
+                        <span style="color: var(--success); font-weight: 600;">
+                            ${formatTime(record.timestamp)}
+                        </span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        // Reset Parent View
+        window.resetParentView = () => {
+            document.getElementById('parentViewContainer').style.display = 'none';
+            document.getElementById('welcomeState').style.display = 'block';
+            document.getElementById('verifyStudentName').value = '';
+            document.getElementById('verifyStudentId').value = '';
+            openSectionModal();
+        };
+
+        // Load Section Data (Teacher/Admin View)
+        function loadSectionData(section) {
+            currentSection = section;
+            
+            // Update UI
+            document.getElementById('currentSectionDisplay').textContent = section;
+            document.getElementById('sectionBtnText').textContent = section;
+            document.getElementById('welcomeState').style.display = 'none';
+            document.getElementById('attendanceTableContainer').style.display = 'block';
+            document.getElementById('statsGrid').style.display = 'grid';
+            document.getElementById('controlsSection').style.display = 'flex';
+            document.getElementById('liveBadge').style.display = 'inline-flex';
+
+            // Load data
+            const attendanceRef = ref(database, `sections/${section}/attendance`);
+            onValue(attendanceRef, (snapshot) => {
+                const data = snapshot.val();
+                sectionAttendanceData = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                renderTable(sectionAttendanceData);
+                updateStats(section);
+            });
+
+            // Load masterlist for attendance rate calculation
+            const masterlistRef = ref(database, `sections/${section}/masterlist`);
+            onValue(masterlistRef, (snapshot) => {
+                updateAttendanceRate(section);
+            });
+        }
+
+        // Render Table
+        function renderTable(data) {
+            const table = document.getElementById('attendanceTable');
+            
+            if (data.length === 0) {
+                table.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                        <h3>No scans yet</h3>
+                        <p>Waiting for students to scan...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            data.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+
+            table.innerHTML = data.map((item, index) => `
+                <div class="table-row" style="animation-delay: ${index * 0.05}s">
+                    <div class="student-cell">
+                        <div class="student-avatar-sm">${(item.studentName || 'U').charAt(0).toUpperCase()}</div>
+                        <div class="student-info">
+                            <h4>${item.studentName || 'Unknown'}</h4>
+                            <span>ID: ${item.studentId || item.key?.substring(0, 8) || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="status-present">
+                            <i class="fa-solid fa-check-circle"></i> PRESENT
+                        </span>
+                    </div>
+                    <div class="time-cell">
+                        <i class="fa-regular fa-clock"></i>
+                        ${formatTime(item.timestamp || item.time)}
+                    </div>
+                    <div class="action-cell">
+                        <button class="action-btn-sm" onclick="deleteRecord('${item.key}')" title="Move to trash">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update Statistics
+        function updateStats(section) {
+            const attendanceRef = ref(database, `sections/${section}/attendance`);
+            onValue(attendanceRef, (snapshot) => {
+                const data = snapshot.val();
+                const count = data ? Object.keys(data).length : 0;
+                
+                // Animate value
+                animateValue('totalScans', parseInt(document.getElementById('totalScans').textContent), count, 1000);
+                
+                // Unique students
+                const unique = data ? new Set(Object.values(data).map(d => d.studentId || d.studentName)).size : 0;
+                animateValue('uniqueStudents', parseInt(document.getElementById('uniqueStudents').textContent), unique, 1000);
+                
+                // Last scan
+                if (data) {
+                    const entries = Object.values(data);
+                    const last = entries[entries.length - 1];
+                    if (last) {
+                        document.getElementById('lastScan').textContent = formatTime(last.timestamp || last.time);
+                    }
+                }
+            });
+        }
+
+        // Update Attendance Rate
+        async function updateAttendanceRate(section) {
+            try {
+                const [attendanceSnap, masterlistSnap] = await Promise.all([
+                    get(ref(database, `sections/${section}/attendance`)),
+                    get(ref(database, `sections/${section}/masterlist`))
+                ]);
+
+                const presentCount = attendanceSnap.exists() ? Object.keys(attendanceSnap.val()).length : 0;
+                const totalStudents = masterlistSnap.exists() ? Object.keys(masterlistSnap.val()).length : 0;
+                
+                const rate = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
+                document.getElementById('attendanceRate').textContent = rate + '%';
+            } catch (error) {
+                console.error('Error calculating rate:', error);
+            }
+        }
+
+        // Filter Table
+        window.filterTable = () => {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = sectionAttendanceData.filter(item => 
+                (item.studentName || '').toLowerCase().includes(searchTerm) ||
+                (item.studentId || '').toLowerCase().includes(searchTerm)
+            );
+            renderTable(filtered);
+        };
+
+        // Delete Record
+        window.deleteRecord = async (key) => {
+            if (!confirm('Move this record to trash?')) return;
+            
+            try {
+                const item = sectionAttendanceData.find(d => d.key === key);
+                if (item) {
+                    await set(ref(database, `sections/${currentSection}/trash/${key}`), {
+                        ...item,
+                        deletedAt: new Date().toISOString(),
+                        deletedBy: currentUser?.email || 'unknown'
+                    });
+                    await remove(ref(database, `sections/${currentSection}/attendance/${key}`));
+                    showToast('Record moved to trash', 'warning');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        // Manual Attendance
+        window.openManualModal = () => {
+            document.getElementById('manualModal').classList.add('active');
+        };
+
+        window.closeManualModal = () => {
+            document.getElementById('manualModal').classList.remove('active');
+            document.getElementById('manualName').value = '';
+            document.getElementById('manualId').value = '';
+        };
+
+        window.submitManualAttendance = async () => {
+            const name = document.getElementById('manualName').value.trim();
+            const studentId = document.getElementById('manualId').value.trim();
+
+            if (!name || !studentId || !currentSection) {
+                showToast('Please fill in all fields and select a section', 'error');
+                return;
+            }
+
+            try {
+                const newRef = push(ref(database, `sections/${currentSection}/attendance`));
+                const timestamp = new Date().toISOString();
+                
+                await set(newRef, {
+                    studentName: name,
+                    studentId: studentId,
+                    timestamp: timestamp,
+                    type: 'manual',
+                    recordedBy: currentUser?.email || 'unknown',
+                    status: 'present'
+                });
+
+                // Also save to history
+                await set(ref(database, `sections/${currentSection}/history/${studentId}/${newRef.key}`), {
+                    timestamp: timestamp,
+                    status: 'present'
+                });
+
+                showToast('Attendance recorded!', 'success');
+                closeManualModal();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        // Export Attendance
+        window.exportAttendance = () => {
+            if (!currentSection || sectionAttendanceData.length === 0) {
+                showToast('No data to export', 'error');
+                return;
+            }
+
+            const csvContent = [
+                ['Student Name', 'Student ID', 'Time', 'Date', 'Type'].join(','),
+                ...sectionAttendanceData.map(item => [
+                    item.studentName || 'Unknown',
+                    item.studentId || 'N/A',
+                    formatTime(item.timestamp || item.time),
+                    formatDate(item.timestamp || item.time),
+                    item.type || 'scan'
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_${currentSection}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            showToast('Attendance exported!', 'success');
+        };
+
+        // Auth Functions
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -1383,7 +1902,6 @@
             }
         });
 
-        // Register Form
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('regName').value;
@@ -1398,15 +1916,14 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
                 
-                // Save user data to database
                 await set(ref(database, 'users/' + userCredential.user.uid), {
                     name: name,
                     email: email,
-                    role: 'admin',
+                    role: 'parent',
                     createdAt: new Date().toISOString()
                 });
                 
-                showToast('Account created successfully!', 'success');
+                showToast('Account created!', 'success');
             } catch (error) {
                 showAuthError(error.message);
                 btn.disabled = false;
@@ -1414,17 +1931,15 @@
             }
         });
 
-        // Google Sign In
         window.googleSignIn = async () => {
             try {
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
                 
-                // Save user data
                 await set(ref(database, 'users/' + user.uid), {
                     name: user.displayName,
                     email: user.email,
-                    role: 'admin',
+                    role: 'parent',
                     createdAt: new Date().toISOString()
                 });
                 
@@ -1434,170 +1949,54 @@
             }
         };
 
-        // Toggle Auth
         window.toggleAuth = () => {
             if (currentUser) {
                 signOut(auth).then(() => {
-                    showToast('Signed out successfully', 'success');
-                }).catch((error) => {
-                    showToast(error.message, 'error');
+                    showToast('Signed out', 'success');
+                    resetToInitialState();
                 });
-            } else {
-                document.getElementById('authOverlay').classList.add('active');
             }
         };
 
-        // Load Attendance
-        function loadAttendance() {
-            const attendanceRef = ref(database, 'attendance');
-            onValue(attendanceRef, (snapshot) => {
-                const data = snapshot.val();
-                attendanceData = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-                renderTable(attendanceData);
-            });
-        }
-
-        // Render Table
-        function renderTable(data) {
-            const table = document.getElementById('attendanceTable');
+        // UI Functions
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
             
-            if (data.length === 0) {
-                table.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-satellite-dish"></i>
-                        <h3>Waiting for scans...</h3>
-                        <p>Attendance records will appear here automatically</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Sort by timestamp descending
-            data.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
-
-            table.innerHTML = data.map((item, index) => `
-                <div class="table-row" style="animation-delay: ${index * 0.05}s">
-                    <div class="student-cell">
-                        <div class="student-avatar-sm">${(item.studentName || 'U').charAt(0).toUpperCase()}</div>
-                        <div class="student-info">
-                            <h4>${item.studentName || 'Unknown'}</h4>
-                            <span>ID: ${item.key?.substring(0, 8) || 'N/A'}</span>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="grade-badge">${item.grade || 'N/A'}</span>
-                    </div>
-                    <div class="time-cell">
-                        <i class="fa-regular fa-clock"></i>
-                        ${formatTime(item.timestamp || item.time)}
-                    </div>
-                    <div class="action-cell">
-                        <button class="action-btn-sm" onclick="deleteRecord('${item.key}')" title="Move to trash">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Filter Table
-        window.filterTable = () => {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = attendanceData.filter(item => 
-                (item.studentName || '').toLowerCase().includes(searchTerm)
-            );
-            renderTable(filtered);
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Form').classList.add('active');
+            document.getElementById('authError').classList.remove('show');
         };
 
-        // Delete Record (Move to Trash)
-        window.deleteRecord = async (key) => {
-            if (!confirm('Move this record to trash?')) return;
-            
-            try {
-                const item = attendanceData.find(d => d.key === key);
-                if (item) {
-                    // Move to trash
-                    await set(ref(database, 'trash/' + key), {
-                        ...item,
-                        deletedAt: new Date().toISOString(),
-                        deletedBy: currentUser?.email || 'unknown'
-                    });
-                    // Remove from attendance
-                    await remove(ref(database, 'attendance/' + key));
-                    showToast('Record moved to trash', 'warning');
-                }
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
+        window.togglePassword = (inputId) => {
+            const input = document.getElementById(inputId);
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            event.target.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
         };
 
-        // Manual Attendance
-        window.openManualModal = () => {
-            document.getElementById('manualModal').classList.add('active');
+        window.openSectionModal = () => {
+            document.getElementById('sectionModal').classList.add('active');
+            // Reset form visibility
+            document.getElementById('parentVerificationForm').style.display = 'none';
+            document.getElementById('sectionGrid').style.display = 'grid';
+            document.querySelectorAll('.section-btn').forEach(btn => btn.classList.remove('active'));
         };
 
-        window.closeManualModal = () => {
-            document.getElementById('manualModal').classList.remove('active');
-            document.getElementById('manualName').value = '';
-            document.getElementById('manualGrade').value = '';
+        window.closeSectionModal = () => {
+            document.getElementById('sectionModal').classList.remove('active');
         };
 
-        window.submitManualAttendance = async () => {
-            const name = document.getElementById('manualName').value.trim();
-            const grade = document.getElementById('manualGrade').value.trim();
-
-            if (!name || !grade) {
-                showToast('Please fill in all fields', 'error');
-                return;
-            }
-
-            try {
-                const newRef = push(ref(database, 'attendance'));
-                await set(newRef, {
-                    studentName: name,
-                    grade: grade,
-                    timestamp: new Date().toISOString(),
-                    type: 'manual',
-                    recordedBy: currentUser?.email || 'unknown'
-                });
-                
-                showToast('Attendance recorded successfully!', 'success');
-                closeManualModal();
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        };
-
-        // Load Stats
-        function loadStats() {
-            // Total scans
-            const attendanceRef = ref(database, 'attendance');
-            onValue(attendanceRef, (snapshot) => {
-                const data = snapshot.val();
-                const count = data ? Object.keys(data).length : 0;
-                animateValue('totalScans', parseInt(document.getElementById('totalScans').textContent), count, 1000);
-                
-                // Unique students
-                const unique = data ? new Set(Object.values(data).map(d => d.studentName)).size : 0;
-                animateValue('uniqueStudents', parseInt(document.getElementById('uniqueStudents').textContent), unique, 1000);
-                
-                // Last scan
-                if (data) {
-                    const entries = Object.values(data);
-                    const last = entries[entries.length - 1];
-                    if (last) {
-                        document.getElementById('lastScan').textContent = formatTime(last.timestamp || last.time);
-                    }
-                }
-            });
-
-            // History count
-            const historyRef = ref(database, 'history');
-            onValue(historyRef, (snapshot) => {
-                const data = snapshot.val();
-                const count = data ? Object.keys(data).length : 0;
-                animateValue('historyCount', parseInt(document.getElementById('historyCount').textContent), count, 1000);
-            });
+        function resetToInitialState() {
+            currentSection = null;
+            currentRole = null;
+            document.getElementById('welcomeState').style.display = 'block';
+            document.getElementById('attendanceTableContainer').style.display = 'none';
+            document.getElementById('statsGrid').style.display = 'none';
+            document.getElementById('controlsSection').style.display = 'none';
+            document.getElementById('parentViewContainer').style.display = 'none';
+            document.getElementById('currentSectionDisplay').textContent = 'No Section Selected';
+            document.getElementById('sectionBtnText').textContent = 'Select Section';
         }
 
         // Helper Functions
@@ -1605,6 +2004,12 @@
             if (!timestamp) return '--:--';
             const date = new Date(timestamp);
             return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '--/--/--';
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
         function animateValue(id, start, end, duration) {
@@ -1659,7 +2064,6 @@
             `;
             
             container.appendChild(toast);
-            
             requestAnimationFrame(() => toast.classList.add('show'));
             
             setTimeout(() => {
@@ -1668,33 +2072,6 @@
             }, 4000);
         };
 
-        window.switchTab = (tab) => {
-            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tab + 'Form').classList.add('active');
-            document.getElementById('authError').classList.remove('show');
-        };
-
-        window.togglePassword = (inputId) => {
-            const input = document.getElementById(inputId);
-            const type = input.type === 'password' ? 'text' : 'password';
-            input.type = type;
-            event.target.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
-        };
-
-        window.navigateTo = (page) => {
-            const pages = {
-                'history': 'history.html',
-                'trash': 'trash.html'
-            };
-            if (pages[page]) {
-                window.location.href = pages[page];
-            }
-        };
-
-        // Create particles
         function createParticles() {
             const container = document.getElementById('particles');
             for (let i = 0; i < 50; i++) {
@@ -1707,11 +2084,13 @@
             }
         }
 
-        createParticles();
-
-        // Close modal on backdrop click
+        // Close modals on backdrop click
         document.getElementById('manualModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) closeManualModal();
+        });
+
+        document.getElementById('sectionModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeSectionModal();
         });
     </script>
 </body>
