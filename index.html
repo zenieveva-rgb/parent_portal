@@ -3,175 +3,1716 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parent Portal | Live Monitor</title>
-    <link rel="stylesheet" href="./style.css">
+    <title>Attendance Pro | Live Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --darker: #020617;
+            --glass: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--darker);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+            animation: bgMove 20s ease-in-out infinite;
+        }
+
+        @keyframes bgMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 10s infinite;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        @keyframes float {
+            0% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-100vh) scale(1.5); }
+        }
+
+        /* Auth Modal */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .auth-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .auth-container {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 420px;
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-overlay.active .auth-container {
+            transform: scale(1) translateY(0);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-logo {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: white;
+            box-shadow: var(--shadow-glow);
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); }
+        }
+
+        .auth-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px;
+            border-radius: 12px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            transition: all 0.3s;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 16px 16px 16px 48px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .auth-input:focus {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .auth-input:focus + .input-icon {
+            color: var(--primary);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .auth-btn:hover::before {
+            left: 100%;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-error {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            animation: shake 0.5s;
+        }
+
+        .auth-error.show {
+            display: flex;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 25px 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .main-container.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .brand-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .brand-text span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+        }
+
+        .user-info.show {
+            display: flex;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            background: var(--gradient-2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-secondary {
+            background: var(--glass);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-1);
+        }
+
+        .stat-card:nth-child(2)::before { background: var(--gradient-2); }
+        .stat-card:nth-child(3)::before { background: var(--gradient-3); }
+        .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        .stat-card:nth-child(1) .stat-icon { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+        .stat-card:nth-child(2) .stat-icon { background: rgba(236, 72, 153, 0.1); color: var(--secondary); }
+        .stat-card:nth-child(3) .stat-icon { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
+        .stat-card:nth-child(4) .stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stat-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        /* Controls Section */
+        .controls-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Table Container */
+        .table-container {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 0.5fr;
+            padding: 20px 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .table-body {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .table-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-body::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 0.5fr;
+            padding: 18px 25px;
+            border-bottom: 1px solid var(--glass-border);
+            align-items: center;
+            transition: all 0.3s;
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: rowSlide 0.4s forwards;
+        }
+
+        @keyframes rowSlide {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .table-row:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .student-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .student-avatar-sm {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .student-info h4 {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .student-info span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .grade-badge {
+            display: inline-flex;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .time-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .time-cell i {
+            color: var(--accent);
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .action-btn-sm {
+            width: 35px;
+            height: 35px;
+            border-radius: 10px;
+            border: none;
+            background: var(--glass);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn-sm:hover {
+            background: var(--danger);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 9998;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.3rem;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--glass);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .toast.warning { border-color: var(--warning); }
+
+        .toast-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .toast.success .toast-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .toast.error .toast-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .toast.warning .toast-icon { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-header,
+            .table-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .table-header {
+                display: none;
+            }
+            
+            .table-row {
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 10px;
+                border: 1px solid var(--glass-border);
+            }
+            
+            .action-cell {
+                justify-content: flex-start;
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid var(--glass-border);
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Pulse Animation for Live Indicator */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+    </style>
 </head>
 <body>
-    <div id="authSection" style="position: fixed; top: 20px; right: 20px; z-index: 100;">
-    <button id="loginBtn" class="action-btn" style="width: auto; padding: 10px 20px;">
-        <i class="fa-solid fa-sign-in-alt"></i> Login
-    </button>
-    <div id="userInfo" style="display: none; color: white;">
-        <span id="userEmail"></span>
-        <button id="logoutBtn" class="action-btn" style="width: auto; padding: 10px 20px; margin-left: 10px;">
-            <i class="fa-solid fa-sign-out-alt"></i> Logout
-        </button>
-    </div>
-</div>
-    <!-- Password Protection Modal -->
-    <div id="passwordModal" class="security-modal">
-        <div class="security-modal-content">
-            <div class="security-header">
-                <i class="fa-solid fa-shield-halved"></i>
-                <h2>Security Verification</h2>
-            </div>
-            <p class="security-desc">Enter admin password to proceed with deletion</p>
-            <div class="password-input-group">
-                <input type="password" id="securityPassword" placeholder="Enter password..." autocomplete="off">
-                <button id="togglePassword" class="toggle-pass">
-                    <i class="fa-solid fa-eye"></i>
-                </button>
-            </div>
-            <div id="passwordError" class="password-error"></div>
-            <div class="security-actions">
-                <button id="cancelPassword" class="sec-btn secondary">Cancel</button>
-                <button id="confirmPassword" class="sec-btn primary">Verify</button>
-            </div>
-            <a href="#" id="forgotPassword" class="forgot-link">Forgot password?</a>
-        </div>
-    </div>
-
-    <!-- Password Reset Modal -->
-    <div id="resetModal" class="security-modal">
-        <div class="security-modal-content">
-            <div class="security-header">
-                <i class="fa-solid fa-envelope-circle-check"></i>
-                <h2>Password Reset</h2>
-            </div>
-            <p class="security-desc">Reset link will be sent to:<br><strong>depeddcp11@gmail.com</strong></p>
-            <div class="security-actions">
-                <button id="cancelReset" class="sec-btn secondary">Cancel</button>
-                <button id="sendReset" class="sec-btn primary">Send Reset Link</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Manual Attendance Modal - FIXED STRUCTURE -->
-    <div id="manualAttendanceModal" class="manual-modal">
-        <div class="manual-modal-backdrop"></div>
-        <div class="manual-modal-container">
-            <div class="manual-modal-content">
-                <div class="manual-header">
-                    <div class="manual-icon-wrap">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </div>
-                    <h2>Manual Attendance</h2>
-                    <p class="manual-subtitle">Enter student details to record attendance</p>
-                </div>
-                
-                <div class="manual-form">
-                    <div class="input-group">
-                        <label class="input-label">Student Name</label>
-                        <div class="input-wrap">
-                            <i class="fa-solid fa-user input-icon"></i>
-                            <input type="text" id="manualStudentName" class="manual-input" placeholder="e.g. Juan Dela Cruz" autocomplete="off">
-                        </div>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label class="input-label">Grade & Section</label>
-                        <div class="input-wrap">
-                            <i class="fa-solid fa-graduation-cap input-icon"></i>
-                            <input type="text" id="manualGradeSection" class="manual-input" placeholder="e.g. Grade 10-A" autocomplete="off">
-                        </div>
-                    </div>
-                    
-                    <div id="manualError" class="manual-error">
-                        <i class="fa-solid fa-circle-exclamation"></i>
-                        <span>Error message here</span>
-                    </div>
-                    
-                    <div class="manual-actions">
-                        <button id="cancelManual" class="manual-btn manual-btn-secondary">
-                            <i class="fa-solid fa-xmark"></i> Cancel
-                        </button>
-                        <button id="confirmManual" class="manual-btn manual-btn-primary">
-                            <i class="fa-solid fa-plus"></i> Add Attendance
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="securityLoading" class="security-loading">
-        <div class="spinner"></div>
-        <p>Verifying...</p>
-    </div>
-
-    <div class="animated-bg"></div>
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
     <div class="particles" id="particles"></div>
 
-    <div class="page-background">
-        <div class="main-container">
-            <!-- Header -->
-            <div class="glass-header">
-                <div class="header-content">
-                    <div class="live-indicator">
-                        <span class="pulse-dot"></span>
-                        <span class="live-text">LIVE</span>
-                    </div>
-                    <h1 class="portal-title neon-cyan">ATTENDANCE<span class="gold-accent">MONITOR</span></h1>
-                    <div class="scan-counter" id="scanCounter">0 scans today</div>
+    <!-- Auth Overlay -->
+    <div class="auth-overlay active" id="authOverlay">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
+                <h2>Welcome Back</h2>
+                <p>Sign in to access the attendance system</p>
             </div>
 
-            <!-- Controls -->
-            <div class="top-controls">
-                <div class="control-group">
-                    <button id="navToHistory" class="action-btn magnetic-btn" title="View Archive">
-                        <i class="fa-solid fa-box-archive"></i>
-                    </button>
-                    <button id="trashBinBtn" class="action-btn magnetic-btn danger" title="Trash Bin">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                    <button id="manualAttendanceBtn" class="action-btn magnetic-btn success" title="Manual Attendance">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </button>
-                </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+                <button class="auth-tab" onclick="switchTab('register')">Sign Up</button>
+            </div>
 
-                <div class="search-container">
-                    <div class="search-box" id="searchBox">
-                        <input type="text" id="nameInput" placeholder="Search student..." class="search-input" autocomplete="off">
-                        <i class="fa-solid fa-magnifying-glass search-trigger"></i>
+            <div class="auth-error" id="authError">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Error message</span>
+            </div>
+
+            <form class="auth-form active" id="loginForm">
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                        <input type="email" class="auth-input" id="loginEmail" placeholder="Enter your email" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" class="auth-input" id="loginPassword" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn" id="loginBtn">
+                    <span>Sign In</span>
+                </button>
+            </form>
+
+            <form class="auth-form" id="registerForm">
+                <div class="input-group">
+                    <label class="input-label">Full Name</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" class="auth-input" id="regName" placeholder="Enter your full name" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                        <input type="email" class="auth-input" id="regEmail" placeholder="Enter your email" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" class="auth-input" id="regPassword" placeholder="Create password (min 6 chars)" required minlength="6">
+                        <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn" id="registerBtn">
+                    <span>Create Account</span>
+                </button>
+            </form>
+
+            <div class="auth-divider">or continue with</div>
+            
+            <button class="auth-btn" style="background: #4285F4;" onclick="googleSignIn()">
+                <i class="fa-brands fa-google"></i>
+                <span>Google</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Manual Attendance Modal -->
+    <div class="modal-overlay" id="manualModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus" style="color: var(--success); margin-right: 10px;"></i>Manual Attendance</h3>
+                <button class="modal-close" onclick="closeManualModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label class="input-label">Student Name</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" class="auth-input" id="manualName" placeholder="e.g. Juan Dela Cruz" style="padding-left: 48px;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Grade & Section</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-graduation-cap input-icon"></i>
+                        <input type="text" class="auth-input" id="manualGrade" placeholder="e.g. Grade 10-A" style="padding-left: 48px;">
                     </div>
                 </div>
             </div>
-
-            <!-- Table -->
-            <div class="table-container glass-panel">
-                <div class="table-header">
-                    <span class="col-name">STUDENT NAME</span>
-                    <span class="col-grade">GRADE/SECTION</span>
-                    <span class="col-time">SCAN TIME</span>
-                </div>
-                <div class="attendance-list" id="attendanceTable">
-                    <div class="empty-state">
-                        <i class="fa-solid fa-satellite-dish fa-bounce"></i>
-                        <p>Waiting for scans...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="portal-footer">
-                <span class="sync-status"><i class="fa-solid fa-wifi"></i> Connected to Firebase</span>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeManualModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitManualAttendance()">
+                    <i class="fa-solid fa-check"></i>
+                    Record Attendance
+                </button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="./script.js"></script>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Main Content -->
+    <div class="main-container" id="mainContainer">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Attendance Pro</h1>
+                    <span>Real-time Monitoring System</span>
+                </div>
+            </div>
+
+            <div class="user-section">
+                <div class="live-badge">
+                    <span class="live-dot"></span>
+                    Live
+                </div>
+                
+                <div class="user-info" id="userInfo">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role">Administrator</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-secondary" id="authActionBtn" onclick="toggleAuth()">
+                    <i class="fa-solid fa-sign-out-alt"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="stat-value" id="totalScans">0</div>
+                <div class="stat-label">Total Scans Today</div>
+                <div class="stat-change">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span>Real-time updates</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div class="stat-value" id="uniqueStudents">0</div>
+                <div class="stat-label">Unique Students</div>
+                <div class="stat-change">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Active now</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div class="stat-value" id="lastScan">--:--</div>
+                <div class="stat-label">Last Scan Time</div>
+                <div class="stat-change">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Just now</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-box-archive"></i>
+                </div>
+                <div class="stat-value" id="historyCount">0</div>
+                <div class="stat-label">History Records</div>
+                <button class="btn btn-secondary" style="margin-top: 10px; width: 100%;" onclick="navigateTo('history')">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    View Archive
+                </button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-section">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search students by name..." oninput="filterTable()">
+            </div>
+            
+            <div class="actions-group">
+                <button class="btn btn-success" onclick="openManualModal()" id="manualBtn" style="opacity: 0.5; pointer-events: none;">
+                    <i class="fa-solid fa-user-plus"></i>
+                    Manual Entry
+                </button>
+                <button class="btn btn-danger" onclick="navigateTo('trash')">
+                    <i class="fa-solid fa-trash-can"></i>
+                    Trash
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <span>Student</span>
+                <span>Grade/Section</span>
+                <span>Scan Time</span>
+                <span>Action</span>
+            </div>
+            <div class="table-body" id="attendanceTable">
+                <div class="empty-state">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <h3>Waiting for scans...</h3>
+                    <p>Attendance records will appear here automatically</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            signOut,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            GoogleAuthProvider,
+            signInWithPopup,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            set, 
+            onValue, 
+            remove,
+            update,
+            query,
+            orderByChild,
+            limitToLast
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdlEvDlQ1qWr8xdL4bV25NW4RgcTajYqM",
+            authDomain: "database-98a70.firebaseapp.com",
+            databaseURL: "https://database-98a70-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "database-98a70",
+            storageBucket: "database-98a70.firebasestorage.app",
+            messagingSenderId: "460345885965",
+            appId: "1:460345885965:web:8484da766b979a0eaf9c44"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let attendanceData = [];
+
+        // Auth State Listener
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            updateUI(user);
+        });
+
+        function updateUI(user) {
+            const authOverlay = document.getElementById('authOverlay');
+            const mainContainer = document.getElementById('mainContainer');
+            const userInfo = document.getElementById('userInfo');
+            const authActionBtn = document.getElementById('authActionBtn');
+            const manualBtn = document.getElementById('manualBtn');
+
+            if (user) {
+                // User is signed in
+                authOverlay.classList.remove('active');
+                setTimeout(() => {
+                    mainContainer.classList.add('loaded');
+                }, 100);
+
+                // Update user info
+                const userName = user.displayName || user.email.split('@')[0];
+                document.getElementById('userName').textContent = userName;
+                document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
+                userInfo.classList.add('show');
+
+                // Update auth button
+                authActionBtn.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i><span>Sign Out</span>';
+                authActionBtn.classList.remove('btn-primary');
+                authActionBtn.classList.add('btn-secondary');
+
+                // Enable manual button
+                manualBtn.style.opacity = '1';
+                manualBtn.style.pointerEvents = 'auto';
+
+                // Load data
+                loadAttendance();
+                loadStats();
+            } else {
+                // User is signed out
+                authOverlay.classList.add('active');
+                mainContainer.classList.remove('loaded');
+                userInfo.classList.remove('show');
+
+                // Update auth button
+                authActionBtn.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i><span>Sign In</span>';
+                authActionBtn.classList.add('btn-primary');
+                authActionBtn.classList.remove('btn-secondary');
+
+                // Disable manual button
+                manualBtn.style.opacity = '0.5';
+                manualBtn.style.pointerEvents = 'none';
+            }
+        }
+
+        // Login Form
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast('Welcome back!', 'success');
+            } catch (error) {
+                showAuthError(error.message);
+                btn.disabled = false;
+                btn.innerHTML = '<span>Sign In</span>';
+            }
+        });
+
+        // Register Form
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const btn = document.getElementById('registerBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(userCredential.user, { displayName: name });
+                
+                // Save user data to database
+                await set(ref(database, 'users/' + userCredential.user.uid), {
+                    name: name,
+                    email: email,
+                    role: 'admin',
+                    createdAt: new Date().toISOString()
+                });
+                
+                showToast('Account created successfully!', 'success');
+            } catch (error) {
+                showAuthError(error.message);
+                btn.disabled = false;
+                btn.innerHTML = '<span>Create Account</span>';
+            }
+        });
+
+        // Google Sign In
+        window.googleSignIn = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                
+                // Save user data
+                await set(ref(database, 'users/' + user.uid), {
+                    name: user.displayName,
+                    email: user.email,
+                    role: 'admin',
+                    createdAt: new Date().toISOString()
+                });
+                
+                showToast('Welcome!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        // Toggle Auth
+        window.toggleAuth = () => {
+            if (currentUser) {
+                signOut(auth).then(() => {
+                    showToast('Signed out successfully', 'success');
+                }).catch((error) => {
+                    showToast(error.message, 'error');
+                });
+            } else {
+                document.getElementById('authOverlay').classList.add('active');
+            }
+        };
+
+        // Load Attendance
+        function loadAttendance() {
+            const attendanceRef = ref(database, 'attendance');
+            onValue(attendanceRef, (snapshot) => {
+                const data = snapshot.val();
+                attendanceData = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                renderTable(attendanceData);
+            });
+        }
+
+        // Render Table
+        function renderTable(data) {
+            const table = document.getElementById('attendanceTable');
+            
+            if (data.length === 0) {
+                table.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                        <h3>Waiting for scans...</h3>
+                        <p>Attendance records will appear here automatically</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by timestamp descending
+            data.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+
+            table.innerHTML = data.map((item, index) => `
+                <div class="table-row" style="animation-delay: ${index * 0.05}s">
+                    <div class="student-cell">
+                        <div class="student-avatar-sm">${(item.studentName || 'U').charAt(0).toUpperCase()}</div>
+                        <div class="student-info">
+                            <h4>${item.studentName || 'Unknown'}</h4>
+                            <span>ID: ${item.key?.substring(0, 8) || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="grade-badge">${item.grade || 'N/A'}</span>
+                    </div>
+                    <div class="time-cell">
+                        <i class="fa-regular fa-clock"></i>
+                        ${formatTime(item.timestamp || item.time)}
+                    </div>
+                    <div class="action-cell">
+                        <button class="action-btn-sm" onclick="deleteRecord('${item.key}')" title="Move to trash">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter Table
+        window.filterTable = () => {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = attendanceData.filter(item => 
+                (item.studentName || '').toLowerCase().includes(searchTerm)
+            );
+            renderTable(filtered);
+        };
+
+        // Delete Record (Move to Trash)
+        window.deleteRecord = async (key) => {
+            if (!confirm('Move this record to trash?')) return;
+            
+            try {
+                const item = attendanceData.find(d => d.key === key);
+                if (item) {
+                    // Move to trash
+                    await set(ref(database, 'trash/' + key), {
+                        ...item,
+                        deletedAt: new Date().toISOString(),
+                        deletedBy: currentUser?.email || 'unknown'
+                    });
+                    // Remove from attendance
+                    await remove(ref(database, 'attendance/' + key));
+                    showToast('Record moved to trash', 'warning');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        // Manual Attendance
+        window.openManualModal = () => {
+            document.getElementById('manualModal').classList.add('active');
+        };
+
+        window.closeManualModal = () => {
+            document.getElementById('manualModal').classList.remove('active');
+            document.getElementById('manualName').value = '';
+            document.getElementById('manualGrade').value = '';
+        };
+
+        window.submitManualAttendance = async () => {
+            const name = document.getElementById('manualName').value.trim();
+            const grade = document.getElementById('manualGrade').value.trim();
+
+            if (!name || !grade) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const newRef = push(ref(database, 'attendance'));
+                await set(newRef, {
+                    studentName: name,
+                    grade: grade,
+                    timestamp: new Date().toISOString(),
+                    type: 'manual',
+                    recordedBy: currentUser?.email || 'unknown'
+                });
+                
+                showToast('Attendance recorded successfully!', 'success');
+                closeManualModal();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        // Load Stats
+        function loadStats() {
+            // Total scans
+            const attendanceRef = ref(database, 'attendance');
+            onValue(attendanceRef, (snapshot) => {
+                const data = snapshot.val();
+                const count = data ? Object.keys(data).length : 0;
+                animateValue('totalScans', parseInt(document.getElementById('totalScans').textContent), count, 1000);
+                
+                // Unique students
+                const unique = data ? new Set(Object.values(data).map(d => d.studentName)).size : 0;
+                animateValue('uniqueStudents', parseInt(document.getElementById('uniqueStudents').textContent), unique, 1000);
+                
+                // Last scan
+                if (data) {
+                    const entries = Object.values(data);
+                    const last = entries[entries.length - 1];
+                    if (last) {
+                        document.getElementById('lastScan').textContent = formatTime(last.timestamp || last.time);
+                    }
+                }
+            });
+
+            // History count
+            const historyRef = ref(database, 'history');
+            onValue(historyRef, (snapshot) => {
+                const data = snapshot.val();
+                const count = data ? Object.keys(data).length : 0;
+                animateValue('historyCount', parseInt(document.getElementById('historyCount').textContent), count, 1000);
+            });
+        }
+
+        // Helper Functions
+        function formatTime(timestamp) {
+            if (!timestamp) return '--:--';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            const range = end - start;
+            const minTimer = 50;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            stepTime = Math.max(stepTime, minTimer);
+            let startTime = new Date().getTime();
+            let endTime = startTime + duration;
+            let timer;
+
+            function run() {
+                let now = new Date().getTime();
+                let remaining = Math.max((endTime - now) / duration, 0);
+                let value = Math.round(end - (remaining * range));
+                obj.textContent = value;
+                if (value == end) clearInterval(timer);
+            }
+            
+            timer = setInterval(run, stepTime);
+            run();
+        }
+
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.querySelector('span').textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-circle-exclamation',
+                warning: 'fa-triangle-exclamation',
+                info: 'fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fa-solid ${icons[type]}"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 2px;">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">${message}</div>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => toast.classList.add('show'));
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        };
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Form').classList.add('active');
+            document.getElementById('authError').classList.remove('show');
+        };
+
+        window.togglePassword = (inputId) => {
+            const input = document.getElementById(inputId);
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            event.target.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+        };
+
+        window.navigateTo = (page) => {
+            const pages = {
+                'history': 'history.html',
+                'trash': 'trash.html'
+            };
+            if (pages[page]) {
+                window.location.href = pages[page];
+            }
+        };
+
+        // Create particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        createParticles();
+
+        // Close modal on backdrop click
+        document.getElementById('manualModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeManualModal();
+        });
+    </script>
 </body>
 </html>
