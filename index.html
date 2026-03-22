@@ -46,46 +46,49 @@
         </div>
     </div>
 
-    <!-- PROFESSIONAL Manual Attendance Modal -->
+    <!-- Manual Attendance Modal - FIXED STRUCTURE -->
     <div id="manualAttendanceModal" class="manual-modal">
-        <div class="manual-modal-content">
-            <div class="manual-header">
-                <div class="manual-icon-wrap">
-                    <i class="fa-solid fa-user-plus"></i>
-                </div>
-                <h2>Manual Attendance</h2>
-                <p class="manual-subtitle">Enter student details to record attendance</p>
-            </div>
-            
-            <div class="manual-form">
-                <div class="input-group">
-                    <label class="input-label">Student Name</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="manualStudentName" class="manual-input" placeholder="e.g. Juan Dela Cruz" autocomplete="off">
+        <div class="manual-modal-backdrop"></div>
+        <div class="manual-modal-container">
+            <div class="manual-modal-content">
+                <div class="manual-header">
+                    <div class="manual-icon-wrap">
+                        <i class="fa-solid fa-user-plus"></i>
                     </div>
+                    <h2>Manual Attendance</h2>
+                    <p class="manual-subtitle">Enter student details to record attendance</p>
                 </div>
                 
-                <div class="input-group">
-                    <label class="input-label">Grade & Section</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-graduation-cap input-icon"></i>
-                        <input type="text" id="manualGradeSection" class="manual-input" placeholder="e.g. Grade 10-A" autocomplete="off">
+                <div class="manual-form">
+                    <div class="input-group">
+                        <label class="input-label">Student Name</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-user input-icon"></i>
+                            <input type="text" id="manualStudentName" class="manual-input" placeholder="e.g. Juan Dela Cruz" autocomplete="off">
+                        </div>
                     </div>
-                </div>
-                
-                <div id="manualError" class="manual-error">
-                    <i class="fa-solid fa-circle-exclamation"></i>
-                    <span></span>
-                </div>
-                
-                <div class="manual-actions">
-                    <button id="cancelManual" class="manual-btn manual-btn-secondary">
-                        <i class="fa-solid fa-xmark"></i> Cancel
-                    </button>
-                    <button id="confirmManual" class="manual-btn manual-btn-primary">
-                        <i class="fa-solid fa-plus"></i> Add Attendance
-                    </button>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Grade & Section</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-graduation-cap input-icon"></i>
+                            <input type="text" id="manualGradeSection" class="manual-input" placeholder="e.g. Grade 10-A" autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <div id="manualError" class="manual-error">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>Error message here</span>
+                    </div>
+                    
+                    <div class="manual-actions">
+                        <button id="cancelManual" class="manual-btn manual-btn-secondary">
+                            <i class="fa-solid fa-xmark"></i> Cancel
+                        </button>
+                        <button id="confirmManual" class="manual-btn manual-btn-primary">
+                            <i class="fa-solid fa-plus"></i> Add Attendance
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
