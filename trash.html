@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Pro | Trash Recovery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --darker: #020617;
+            --glass: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--darker);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(239, 68, 68, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+            animation: bgMove 20s ease-in-out infinite;
+        }
+
+        @keyframes bgMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .main-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+            transform: translateX(-5px);
+        }
+
+        .header-title {
+            text-align: center;
+            flex: 1;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--danger);
+        }
+
+        .header-title span {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .danger-btn {
+            padding: 12px 24px;
+            background: var(--gradient-danger);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .danger-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Trash List */
+        .trash-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .trash-group {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .trash-group:hover {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .trash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: rgba(239, 68, 68, 0.1);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .trash-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .trash-avatar {
+            width: 45px;
+            height: 45px;
+            background: var(--gradient-danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .trash-user-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 3px;
+        }
+
+        .trash-user-info span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .trash-badge {
+            padding: 6px 12px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--danger);
+        }
+
+        .trash-items {
+            padding: 15px;
+        }
+
+        .trash-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .trash-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .trash-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .trash-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .trash-date {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .trash-date i {
+            color: var(--accent);
+        }
+
+        .trash-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .restore-btn {
+            padding: 8px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            color: var(--success);
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .restore-btn:hover {
+            background: var(--success);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .delete-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 5rem;
+            margin-bottom: 25px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        /* Confirmation Modal */
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .confirm-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .confirm-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .confirm-content p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .confirm-actions button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel {
+            background: var(--glass);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-confirm {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .trash-item {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .trash-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <div class="main-container">
+        <!-- Header -->
+        <div class="page-header">
+            <a href="index.html" class="back-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to Monitor
+            </a>
+            
+            <div class="header-title">
+                <h1><i class="fa-solid fa-trash-can" style="color: var(--danger);"></i> Trash Recovery</h1>
+                <span>Deleted items are stored here for 30 days</span>
+            </div>
+            
+            <button class="danger-btn" onclick="confirmEmptyTrash()">
+                <i class="fa-solid fa-trash-arrow-up"></i>
+                Empty Trash
+            </button>
+        </div>
+
+        <!-- Trash List -->
+        <div class="trash-list" id="trashList">
+            <div class="empty-state">
+                <i class="fa-regular fa-trash-can"></i>
+                <h3>Trash is Empty</h3>
+                <p>Deleted attendance records will appear here</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <div class="confirm-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3>Empty Trash?</h3>
+            <p>This will permanently delete all items in trash. This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn-confirm" onclick="executeEmptyTrash()">
+                    <i class="fa-solid fa-trash"></i>
+                    Delete All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, remove, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdlEvDlQ1qWr8xdL4bV25NW4RgcTajYqM",
+            authDomain: "database-98a70.firebaseapp.com",
+            databaseURL: "https://database-98a70-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "database-98a70",
+            storageBucket: "database-98a70.firebasestorage.app",
+            messagingSenderId: "460345885965",
+            appId: "1:460345885965:web:8484da766b979a0eaf9c44"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let trashData = {};
+
+        // Load trash data
+        function loadTrash() {
+            const trashRef = ref(database, 'trash');
+            onValue(trashRef, (snapshot) => {
+                trashData = snapshot.val() || {};
+                renderTrash();
+            });
+        }
+
+        function renderTrash() {
+            const container = document.getElementById('trashList');
+            const entries = Object.entries(trashData);
+            
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-regular fa-trash-can"></i>
+                        <h3>Trash is Empty</h3>
+                        <p>Deleted attendance records will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group by student name
+            const grouped = {};
+            entries.forEach(([key, item]) => {
+                const name = item.studentName || 'Unknown';
+                if (!grouped[name]) grouped[name] = [];
+                grouped[name].push({ key, ...item });
+            });
+
+            container.innerHTML = Object.entries(grouped).map(([name, items]) => `
+                <div class="trash-group">
+                    <div class="trash-header">
+                        <div class="trash-user">
+                            <div class="trash-avatar">${name.charAt(0).toUpperCase()}</div>
+                            <div class="trash-user-info">
+                                <h3>${name}</h3>
+                                <span>${items[0].grade || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="trash-badge">${items.length} item${items.length > 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="trash-items">
+                        ${items.map(item => `
+                            <div class="trash-item">
+                                <div class="trash-info">
+                                    <div class="trash-date">
+                                        <i class="fa-regular fa-calendar"></i>
+                                        Deleted: ${formatDate(item.deletedAt)}
+                                    </div>
+                                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 23px;">
+                                        Original: ${formatDate(item.timestamp || item.time)} at ${formatTime(item.timestamp || item.time)}
+                                    </div>
+                                </div>
+                                <div class="trash-actions">
+                                    <button class="restore-btn" onclick="restoreItem('${item.key}')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                        Restore
+                                    </button>
+                                    <button class="delete-btn" onclick="deletePermanently('${item.key}')" title="Delete Forever">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.restoreItem = async (key) => {
+            try {
+                const item = trashData[key];
+                if (!item) return;
+
+                // Restore to attendance
+                await set(ref(database, 'attendance/' + key), {
+                    studentName: item.studentName,
+                    grade: item.grade,
+                    timestamp: item.timestamp || item.time,
+                    restoredAt: new Date().toISOString()
+                });
+
+                // Remove from trash
+                await remove(ref(database, 'trash/' + key));
+                
+                showToast('Item restored successfully', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        window.deletePermanently = async (key) => {
+            if (!confirm('Permanently delete this record? This cannot be undone.')) return;
+            
+            try {
+                await remove(ref(database, 'trash/' + key));
+                showToast('Item deleted permanently', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        window.confirmEmptyTrash = () => {
+            document.getElementById('confirmModal').classList.add('active');
+        };
+
+        window.closeConfirmModal = () => {
+            document.getElementById('confirmModal').classList.remove('active');
+        };
+
+        window.executeEmptyTrash = async () => {
+            try {
+                const trashRef = ref(database, 'trash');
+                await remove(trashRef);
+                closeConfirmModal();
+                showToast('Trash emptied successfully', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '--:--';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        window.showToast = (message, type = 'success') => {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-circle-exclamation'}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        };
+
+        // Close modal on backdrop click
+        document.getElementById('confirmModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeConfirmModal();
+        });
+
+        // Load data on page load
+        loadTrash();
+    </script>
+</body>
+</html>
