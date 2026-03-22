@@ -88,80 +88,102 @@ function initManualAttendance() {
         manualAttendanceForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const studentId = document.getElementById('manualStudentId').value.trim();
-            const studentName = document.getElementById('manualStudentName').value.trim();
-            const submitBtn = manualAttendanceForm.querySelector('.manual-btn');
-            const originalText = submitBtn.innerHTML;
-            
-            if (!studentId || !studentName) {
-                showError('Please fill in all fields');
-                return;
-            }
-            
-            // Show loading state
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            submitBtn.disabled = true;
-            
-            try {
-                const user = auth.currentUser;
-                if (!user) {
-                    throw new Error('You must be logged in to record attendance');
-                }
-                
-                // Check admin approval status
-                const userRef = ref(database, 'users/' + user.uid);
-                const userSnapshot = await get(userRef);
-                
-                if (!userSnapshot.exists() || userSnapshot.val().status !== 'approved') {
-                    throw new Error('Your account is pending admin approval');
-                }
-                
-                // Record attendance
-                const attendanceData = {
-                    studentId: studentId,
-                    studentName: studentName,
-                    scannedBy: user.email,
-                    scannedByUid: user.uid,
-                    timestamp: new Date().toISOString(),
-                    type: 'manual'
-                };
-                
-                const newAttendanceRef = push(ref(database, 'attendance'));
-                await set(newAttendanceRef, attendanceData);
-                
-                // Show success
-                showSuccess('Attendance recorded successfully!');
-                
-                // Reset form and close modal
-                manualAttendanceForm.reset();
-                setTimeout(() => {
-                    closeModal();
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Error recording attendance:', error);
-                showError(error.message || 'Failed to record attendance');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
+        // Manual Attendance Modal Logic
+const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
+const manualAttendanceModal = document.getElementById('manualAttendanceModal');
+const cancelManualBtn = document.getElementById('cancelManual');
+const confirmManualBtn = document.getElementById('confirmManual');
+const manualError = document.getElementById('manualError');
+
+// Open modal
+manualAttendanceBtn?.addEventListener('click', () => {
+    manualAttendanceModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Focus first input
+    setTimeout(() => {
+        document.getElementById('manualStudentName')?.focus();
+    }, 100);
+});
+
+// Close modal function
+function closeManualModal() {
+    manualAttendanceModal.classList.remove('active');
+    document.body.style.overflow = '';
+    document.getElementById('manualStudentName').value = '';
+    document.getElementById('manualGradeSection').value = '';
+    manualError.classList.remove('show');
+}
+
+// Close events
+cancelManualBtn?.addEventListener('click', closeManualModal);
+
+// Close on backdrop click
+manualAttendanceModal?.addEventListener('click', (e) => {
+    if (e.target === manualAttendanceModal) {
+        closeManualModal();
+    }
+});
+
+// Submit attendance
+confirmManualBtn?.addEventListener('click', async () => {
+    const studentName = document.getElementById('manualStudentName').value.trim();
+    const gradeSection = document.getElementById('manualGradeSection').value.trim();
+    
+    if (!studentName || !gradeSection) {
+        showManualError('Please fill in all fields');
+        return;
+    }
+    
+    // Loading state
+    confirmManualBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    confirmManualBtn.disabled = true;
+    
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error('You must be logged in');
+        
+        // Check approval
+        const userRef = ref(database, 'users/' + user.uid);
+        const userSnap = await get(userRef);
+        
+        if (!userSnap.exists() || userSnap.val().status !== 'approved') {
+            throw new Error('Account pending admin approval');
+        }
+        
+        // Save to Firebase
+        await push(ref(database, 'attendance'), {
+            studentName: studentName,
+            grade: gradeSection,
+            scannedBy: user.email,
+            scannedByUid: user.uid,
+            timestamp: new Date().toISOString(),
+            type: 'manual'
         });
+        
+        // Success
+        confirmManualBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
+        confirmManualBtn.classList.add('success');
+        
+        setTimeout(() => {
+            closeManualModal();
+            confirmManualBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Attendance';
+            confirmManualBtn.disabled = false;
+            confirmManualBtn.classList.remove('success');
+        }, 1500);
+        
+    } catch (error) {
+        showManualError(error.message);
+        confirmManualBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Attendance';
+        confirmManualBtn.disabled = false;
     }
-}
+});
 
-// Show error message
-function showError(message) {
-    const errorDiv = document.getElementById('manualError');
-    if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.classList.add('show');
-        setTimeout(() => errorDiv.classList.remove('show'), 5000);
-    } else {
-        alert(message);
-    }
+function showManualError(message) {
+    manualError.querySelector('span').textContent = message;
+    manualError.classList.add('show');
+    setTimeout(() => manualError.classList.remove('show'), 5000);
 }
-
 // Show success message
 function showSuccess(message) {
     const successDiv = document.getElementById('manualSuccess');
