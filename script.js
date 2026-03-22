@@ -1,7 +1,61 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getDatabase, ref, push, set, onValue, query, orderByChild, equalTo, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+// Simple login/logout
+document.getElementById('loginBtn')?.addEventListener('click', async () => {
+    const email = prompt('Enter email:');
+    const password = prompt('Enter password:');
+    if (email && password) {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            alert('Logged in successfully!');
+        } catch (error) {
+            // Try to create account if login fails
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('Account created and logged in!');
+            } catch (createError) {
+                alert('Login failed: ' + error.message);
+            }
+        }
+    }
+});
+
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
+    signOut(auth);
+});
+
+// Update UI based on auth state
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    const loginBtn = document.getElementById('loginBtn');
+    const userInfo = document.getElementById('userInfo');
+    const userEmail = document.getElementById('userEmail');
+    
+    if (user) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (userInfo) {
+            userInfo.style.display = 'flex';
+            userInfo.style.alignItems = 'center';
+        }
+        if (userEmail) userEmail.textContent = user.email;
+        
+        if (manualAttendanceBtn) {
+            manualAttendanceBtn.style.opacity = '1';
+            manualAttendanceBtn.style.pointerEvents = 'auto';
+        }
+    } else {
+        if (loginBtn) loginBtn.style.display = 'block';
+        if (userInfo) userInfo.style.display = 'none';
+        
+        if (manualAttendanceBtn) {
+            manualAttendanceBtn.style.opacity = '0.5';
+            manualAttendanceBtn.style.pointerEvents = 'none';
+        }
+    }
+});
 const firebaseConfig = {
     apiKey: "AIzaSyBdlEvDlQ1qWr8xdL4bV25NW4RgcTajYqM",
     authDomain: "database-98a70.firebaseapp.com",
