@@ -3,6 +3,50 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { getDatabase, ref, push, set, onValue, query, orderByChild, equalTo, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+const firebaseConfig = {
+    apiKey: "AIzaSyBdlEvDlQ1qWr8xdL4bV25NW4RgcTajYqM",
+    authDomain: "database-98a70.firebaseapp.com",
+    databaseURL: "https://database-98a70-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "database-98a70",
+    storageBucket: "database-98a70.firebasestorage.app",
+    messagingSenderId: "460345885965",
+    appId: "1:460345885965:web:8484da766b979a0eaf9c44"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+
+// Global variable to store current user
+let currentUser = null;
+
+// Manual Attendance Elements
+const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
+const manualAttendanceModal = document.getElementById('manualAttendanceModal');
+const cancelManualBtn = document.getElementById('cancelManual');
+const confirmManualBtn = document.getElementById('confirmManual');
+const manualError = document.getElementById('manualError');
+
+// Wait for auth state before allowing actions
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    console.log('Auth state changed:', user ? 'Logged in as ' + user.email : 'Not logged in');
+    
+    if (user) {
+        // User is signed in - enable manual attendance
+        if (manualAttendanceBtn) {
+            manualAttendanceBtn.style.opacity = '1';
+            manualAttendanceBtn.style.pointerEvents = 'auto';
+        }
+    } else {
+        // User is signed out - disable manual attendance
+        if (manualAttendanceBtn) {
+            manualAttendanceBtn.style.opacity = '0.5';
+            manualAttendanceBtn.style.pointerEvents = 'none';
+        }
+    }
+});
+
 // Simple login/logout
 document.getElementById('loginBtn')?.addEventListener('click', async () => {
     const email = prompt('Enter email:');
@@ -56,50 +100,6 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
-const firebaseConfig = {
-    apiKey: "AIzaSyBdlEvDlQ1qWr8xdL4bV25NW4RgcTajYqM",
-    authDomain: "database-98a70.firebaseapp.com",
-    databaseURL: "https://database-98a70-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "database-98a70",
-    storageBucket: "database-98a70.firebasestorage.app",
-    messagingSenderId: "460345885965",
-    appId: "1:460345885965:web:8484da766b979a0eaf9c44"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const database = getDatabase(app);
-
-// Global variable to store current user
-let currentUser = null;
-
-// Manual Attendance Elements
-const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
-const manualAttendanceModal = document.getElementById('manualAttendanceModal');
-const cancelManualBtn = document.getElementById('cancelManual');
-const confirmManualBtn = document.getElementById('confirmManual');
-const manualError = document.getElementById('manualError');
-
-// Wait for auth state before allowing actions
-onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    console.log('Auth state changed:', user ? 'Logged in as ' + user.email : 'Not logged in');
-    
-    if (user) {
-        // User is signed in - enable manual attendance
-        if (manualAttendanceBtn) {
-            manualAttendanceBtn.style.opacity = '1';
-            manualAttendanceBtn.style.pointerEvents = 'auto';
-        }
-    } else {
-        // User is signed out - disable manual attendance
-        if (manualAttendanceBtn) {
-            manualAttendanceBtn.style.opacity = '0.5';
-            manualAttendanceBtn.style.pointerEvents = 'none';
-        }
-    }
-});
-
 // Initialize Manual Attendance
 function initManualAttendance() {
     if (!manualAttendanceBtn || !manualAttendanceModal) {
