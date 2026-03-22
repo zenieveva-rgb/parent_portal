@@ -3,163 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parent Portal | Archive</title>
+    <title>Attendance History - SecretaryWeb</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-
-    <!-- SECURITY MODALS - PASTE AT TOP OF BODY -->
-    <!-- Password Protection Modal -->
-    <div id="passwordModal" class="security-modal">
-        <div class="security-modal-content">
-            <div class="security-header">
-                <i class="fa-solid fa-shield-halved"></i>
-                <h2>Security Verification</h2>
-            </div>
-            <p class="security-desc">Enter admin password to proceed with deletion</p>
-            <div class="password-input-group">
-                <input type="password" id="securityPassword" placeholder="Enter password..." autocomplete="off">
-                <button id="togglePassword" class="toggle-pass">
-                    <i class="fa-solid fa-eye"></i>
+    <header>
+        <div class="logo">
+            <i class="fas fa-qrcode"></i>
+            <span>SecretaryWeb</span>
+        </div>
+        <div class="nav-buttons">
+            <a href="index.html" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Scanner
+            </a>
+            <div id="userInfo" class="hidden" style="display: flex; align-items: center; gap: 1rem;">
+                <span id="userEmail" style="color: var(--text-secondary);"></span>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
-            <div id="passwordError" class="password-error"></div>
-            <div class="security-actions">
-                <button id="cancelPassword" class="sec-btn secondary">Cancel</button>
-                <button id="confirmPassword" class="sec-btn primary">Verify</button>
-            </div>
-            <a href="#" id="forgotPassword" class="forgot-link">Forgot password?</a>
         </div>
-    </div>
+    </header>
 
-    <!-- Password Reset Modal -->
-    <div id="resetModal" class="security-modal">
-        <div class="security-modal-content">
-            <div class="security-header">
-                <i class="fa-solid fa-envelope-circle-check"></i>
-                <h2>Password Reset</h2>
-            </div>
-            <p class="security-desc">Reset link will be sent to:<br><strong>depeddcp11@gmail.com</strong></p>
-            <div class="security-actions">
-                <button id="cancelReset" class="sec-btn secondary">Cancel</button>
-                <button id="sendReset" class="sec-btn primary">Send Reset Link</button>
+    <main class="container">
+        <div id="attendanceHistory">
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-archive"></i>
+                    Attendance Archive
+                </h2>
+                <div id="historyList" class="history-container">
+                    <!-- History items will be loaded here -->
+                    <p class="no-records">Loading attendance records...</p>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="securityLoading" class="security-loading">
-        <div class="spinner"></div>
-        <p>Verifying...</p>
-    </div>
-    <!-- END SECURITY MODALS -->
-
-    <div class="animated-bg"></div>
-    <div class="particles" id="particles"></div>
-
-    <div class="page-background">
-        <div class="main-container">
-            <!-- Header -->
-            <div class="glass-header archive-header">
-                <div class="header-content">
-                    <div class="archive-indicator">
-                        <span class="archive-icon"><i class="fa-solid fa-box-archive"></i></span>
-                        <span class="archive-text">ARCHIVE</span>
-                    </div>
-                    <h1 class="portal-title gold-text">SCAN<span class="white-text">ARCHIVE</span></h1>
-                    <div class="folder-counter" id="folderCounter">0 folders</div>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="top-controls">
-                <div class="control-group">
-                    <button id="navToPortal" class="action-btn magnetic-btn" title="Back to Live">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <button id="trashBinBtn" class="action-btn magnetic-btn danger" title="Trash Bin">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-
-                <!-- Morphing Search -->
-                <div class="search-morph-container">
-                    <div class="search-morph" id="searchMorph">
-                        <input type="text" id="archiveSearch" class="search-morph-input" placeholder="Search folders..." autocomplete="off">
-                        <button class="search-morph-btn" id="searchMorphBtn">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Alphabet Quick Jump -->
-            <div class="alphabet-scroller" id="alphabetScroller">
-                <div class="alphabet-track" id="alphabetTrack">
-                    <!-- Generated by JS -->
-                </div>
-            </div>
-
-            <!-- Student Folders Grid -->
-            <div class="table-container folder-container">
-                <div class="table-header folder-header">
-                    <span class="col-folder">FOLDER NAME</span>
-                    <span class="col-info">GRADE/SCANS</span>
-                    <span class="col-action">VIEW</span>
-                </div>
-                <div class="attendance-list folder-grid" id="historyTable">
-                    <div class="empty-state">
-                        <i class="fa-solid fa-spinner fa-spin-pulse"></i>
-                        <p>Loading archive...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="portal-footer">
-                <span class="sync-status"><i class="fa-solid fa-database"></i> Archive Mode</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal -->
-    <div id="historyModal" class="modal-overlay">
-        <div class="modal-content glass-panel">
-            <div class="modal-header">
-                <div class="student-avatar gold-avatar">
-                    <i class="fa-solid fa-folder-open"></i>
-                </div>
-                <div class="student-info">
-                    <h2 id="modalStudentName" class="student-name gold-text">Student Name</h2>
-                    <span id="modalStudentGrade" class="student-grade">Grade --</span>
-                </div>
-                <button id="closeModal" class="close-btn">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <div class="modal-stats">
-                <div class="stat-box">
-                    <span class="stat-number" id="totalScans">0</span>
-                    <span class="stat-label">Total Scans</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-number" id="lastScan">--</span>
-                    <span class="stat-label">Last Scan</span>
-                </div>
-            </div>
-
-            <div class="logs-container">
-                <h3 class="logs-title"><i class="fa-solid fa-clock-rotate-left"></i> Scan History</h3>
-                <div id="individualLogs" class="logs-list"></div>
-            </div>
-            
-            <button id="closeModalBottom" class="action-btn close-modal-btn gold-btn">
-                <i class="fa-solid fa-check"></i> Done
-            </button>
-        </div>
-    </div>
+    </main>
 
     <script type="module" src="script.js"></script>
 </body>
