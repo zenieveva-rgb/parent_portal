@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Pro | Dynamic Section Manager</title>
+    <title>Attendance Pro | Section Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
@@ -527,6 +527,124 @@
             background: var(--danger);
         }
 
+        /* Password Protection Modal */
+        .password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 10001;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .password-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .password-container {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .password-modal.active .password-container {
+            transform: scale(1);
+        }
+
+        .password-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 2rem;
+            color: white;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .password-container h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .password-container p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        .password-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .password-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .password-actions button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel {
+            background: var(--glass);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-confirm {
+            background: var(--gradient-1);
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
         /* QR Scanner Container */
         .qr-container {
             background: rgba(0, 0, 0, 0.5);
@@ -1038,7 +1156,7 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            z-index: 10001;
+            z-index: 10002;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -1252,6 +1370,22 @@
                     <span>Create Account</span>
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Password Protection Modal -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-container">
+            <div class="password-icon">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3>Developer Access Required</h3>
+            <p>Please enter the developer password to manage sections</p>
+            <input type="password" class="password-input" id="devPasswordInput" placeholder="••••••••••••" maxlength="20">
+            <div class="password-actions">
+                <button class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                <button class="btn-confirm" onclick="verifyDevPassword()">Verify</button>
+            </div>
         </div>
     </div>
 
@@ -1522,9 +1656,14 @@
         // State
         let currentUser = null;
         let currentSection = null;
+        let currentRole = null;
         let sections = {};
         let qrScanner = null;
         let editingSectionId = null;
+        let pendingAction = null; // Store action to perform after password verification
+
+        // Developer Password
+        const DEV_PASSWORD = '$developer1245';
 
         // Auth Listener
         onAuthStateChanged(auth, (user) => {
@@ -1532,14 +1671,39 @@
             if (user) {
                 document.getElementById('authOverlay').classList.remove('active');
                 document.getElementById('mainContainer').classList.add('loaded');
-                loadSections();
+                checkUserRole(user.uid);
             } else {
                 document.getElementById('authOverlay').classList.add('active');
                 document.getElementById('mainContainer').classList.remove('loaded');
             }
         });
 
-        // Load Sections from Firebase
+        // Check user role
+        async function checkUserRole(uid) {
+            try {
+                const userRef = ref(database, 'users/' + uid);
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    currentRole = userData.role || 'parent';
+                } else {
+                    currentRole = 'parent';
+                    await set(userRef, {
+                        email: currentUser.email,
+                        name: currentUser.displayName || currentUser.email.split('@')[0],
+                        role: 'parent',
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                loadSections();
+            } catch (error) {
+                console.error('Error checking role:', error);
+                currentRole = 'parent';
+                loadSections();
+            }
+        }
+
+        // Load Sections
         function loadSections() {
             const sectionsRef = ref(database, 'sections');
             onValue(sectionsRef, (snapshot) => {
@@ -1549,7 +1713,7 @@
             });
         }
 
-        // Render Section List (in modal)
+        // Render Section List
         function renderSectionList() {
             const container = document.getElementById('sectionList');
             const sectionEntries = Object.entries(sections);
@@ -1573,10 +1737,10 @@
                         </div>
                     </div>
                     <div class="section-actions">
-                        <button class="section-btn-sm" onclick="editSection('${id}')" title="Edit">
+                        <button class="section-btn-sm" onclick="requestEditSection('${id}')" title="Edit">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button class="section-btn-sm delete" onclick="deleteSection('${id}')" title="Delete">
+                        <button class="section-btn-sm delete" onclick="requestDeleteSection('${id}')" title="Delete">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -1584,7 +1748,7 @@
             `).join('');
         }
 
-        // Render Section Menu (sidebar)
+        // Render Section Menu
         function renderSectionMenu() {
             const container = document.getElementById('sectionMenu');
             container.innerHTML = Object.entries(sections).map(([id, section]) => `
@@ -1595,8 +1759,61 @@
             `).join('');
         }
 
-        // Section Management Functions
+        // PASSWORD PROTECTION FUNCTIONS
+        
+        window.requestEditSection = (id) => {
+            pendingAction = { type: 'edit', id: id };
+            openPasswordModal();
+        };
+
+        window.requestDeleteSection = (id) => {
+            pendingAction = { type: 'delete', id: id };
+            openPasswordModal();
+        };
+
+        window.openPasswordModal = () => {
+            document.getElementById('passwordModal').classList.add('active');
+            document.getElementById('devPasswordInput').value = '';
+            document.getElementById('devPasswordInput').focus();
+        };
+
+        window.closePasswordModal = () => {
+            document.getElementById('passwordModal').classList.remove('active');
+            pendingAction = null;
+        };
+
+        window.verifyDevPassword = () => {
+            const input = document.getElementById('devPasswordInput').value;
+            
+            if (input === DEV_PASSWORD) {
+                closePasswordModal();
+                showToast('Developer access granted!', 'success');
+                
+                // Execute pending action
+                if (pendingAction) {
+                    if (pendingAction.type === 'edit') {
+                        executeEditSection(pendingAction.id);
+                    } else if (pendingAction.type === 'delete') {
+                        executeDeleteSection(pendingAction.id);
+                    }
+                    pendingAction = null;
+                }
+            } else {
+                showToast('Incorrect password!', 'error');
+                document.getElementById('devPasswordInput').value = '';
+                document.getElementById('devPasswordInput').focus();
+            }
+        };
+
+        // Allow Enter key to submit password
+        document.getElementById('devPasswordInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyDevPassword();
+        });
+
+        // SECTION MANAGEMENT FUNCTIONS
+
         window.showAddSectionForm = () => {
+            // Add section doesn't need password - it's creation, not modification
             editingSectionId = null;
             document.getElementById('formTitle').textContent = 'Add New Section';
             document.getElementById('gradeLevel').value = '7';
@@ -1606,13 +1823,40 @@
             updateSectionIdPreview();
         };
 
+        function executeEditSection(id) {
+            const section = sections[id];
+            if (!section) return;
+
+            editingSectionId = id;
+            document.getElementById('formTitle').textContent = 'Edit Section';
+            document.getElementById('gradeLevel').value = section.grade;
+            document.getElementById('sectionNameInput').value = section.displayName || section.name.split('-')[1];
+            document.getElementById('sectionIdInput').value = section.name;
+            document.getElementById('sectionEditForm').classList.add('show');
+        }
+
+        async function executeDeleteSection(id) {
+            if (!confirm(`Delete section "${sections[id]?.name}"? This will remove all attendance data!`)) return;
+
+            try {
+                await remove(ref(database, `sections/${id}`));
+                showToast('Section deleted', 'warning');
+                if (currentSection === id) {
+                    currentSection = null;
+                    showWelcomeState();
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
         window.hideSectionForm = () => {
             document.getElementById('sectionEditForm').classList.remove('show');
         };
 
         // Auto-generate section ID
-        document.getElementById('gradeLevel').addEventListener('change', updateSectionIdPreview);
-        document.getElementById('sectionNameInput').addEventListener('input', updateSectionIdPreview);
+        document.getElementById('gradeLevel')?.addEventListener('change', updateSectionIdPreview);
+        document.getElementById('sectionNameInput')?.addEventListener('input', updateSectionIdPreview);
 
         function updateSectionIdPreview() {
             const grade = document.getElementById('gradeLevel').value;
@@ -1634,56 +1878,24 @@
             try {
                 const sectionData = {
                     grade: grade,
-                    name: id, // Full ID like "12-Sincerity"
-                    displayName: name, // Just "Sincerity"
+                    name: id,
+                    displayName: name,
                     createdAt: new Date().toISOString(),
-                    createdBy: currentUser.email
+                    createdBy: currentUser?.email || 'unknown'
                 };
 
                 if (editingSectionId) {
-                    // Update existing
                     await update(ref(database, `sections/${editingSectionId}`), sectionData);
                     showToast('Section updated!', 'success');
                 } else {
-                    // Create new
                     await set(ref(database, `sections/${id}`), sectionData);
-                    
-                    // Initialize section structure
                     await set(ref(database, `sections/${id}/attendance`), {});
                     await set(ref(database, `sections/${id}/masterlist`), {});
                     await set(ref(database, `sections/${id}/settings`), { autoArchive: true });
-                    
                     showToast('Section created!', 'success');
                 }
 
                 hideSectionForm();
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        };
-
-        window.editSection = (id) => {
-            const section = sections[id];
-            if (!section) return;
-
-            editingSectionId = id;
-            document.getElementById('formTitle').textContent = 'Edit Section';
-            document.getElementById('gradeLevel').value = section.grade;
-            document.getElementById('sectionNameInput').value = section.displayName || section.name.split('-')[1];
-            document.getElementById('sectionIdInput').value = section.name;
-            document.getElementById('sectionEditForm').classList.add('show');
-        };
-
-        window.deleteSection = async (id) => {
-            if (!confirm(`Delete section "${sections[id]?.name}"? This will remove all attendance data!`)) return;
-
-            try {
-                await remove(ref(database, `sections/${id}`));
-                showToast('Section deleted', 'warning');
-                if (currentSection === id) {
-                    currentSection = null;
-                    showWelcomeState();
-                }
             } catch (error) {
                 showToast(error.message, 'error');
             }
@@ -1694,19 +1906,16 @@
             currentSection = id;
             const section = sections[id];
             
-            // Update UI
             document.getElementById('currentSectionDisplay').textContent = section.name;
             document.getElementById('sectionBtnText').textContent = section.name;
             document.getElementById('contentSectionName').textContent = section.name;
             document.getElementById('dashboardGrid').style.display = 'grid';
             document.getElementById('welcomeState').style.display = 'none';
             
-            // Update active states
             document.querySelectorAll('.section-menu-item').forEach(item => {
                 item.classList.toggle('active', item.getAttribute('onclick').includes(id));
             });
 
-            // Load attendance
             loadAttendance(id);
         };
 
@@ -1765,7 +1974,6 @@
         function updateStats(sectionId, attendanceList) {
             const present = attendanceList.length;
             
-            // Get masterlist count for total students
             get(ref(database, `sections/${sectionId}/masterlist`)).then(snapshot => {
                 const masterlist = snapshot.val() || {};
                 const total = Object.keys(masterlist).length;
@@ -1810,20 +2018,16 @@
 
         async function onScanSuccess(decodedText) {
             try {
-                // QR Code format: sectionId|studentId|studentName
-                // Example: "12-Sincerity|2024001|Juan Dela Cruz"
                 const parts = decodedText.split('|');
                 
                 if (parts.length >= 2) {
                     const [sectionId, studentId, studentName] = parts;
                     
-                    // Verify section exists
                     if (!sections[sectionId]) {
                         showToast(`Section "${sectionId}" not found!`, 'error');
                         return;
                     }
 
-                    // Record attendance
                     const timestamp = new Date().toISOString();
                     const newRef = push(ref(database, `sections/${sectionId}/attendance`));
                     
@@ -1835,7 +2039,6 @@
                         scannedBy: currentUser?.email || 'system'
                     });
 
-                    // Show success
                     document.getElementById('scanDetails').innerHTML = `
                         <strong>Section:</strong> ${sectionId}<br>
                         <strong>Student:</strong> ${studentName || studentId}<br>
@@ -1843,12 +2046,9 @@
                     `;
                     document.getElementById('scanResult').classList.add('show');
                     
-                    // Auto-select section
                     selectSection(sectionId);
-                    
                     showToast('Attendance recorded via QR!', 'success');
                     
-                    // Stop scanner after successful scan
                     setTimeout(() => {
                         stopQRScanner();
                         closeSectionModal();
@@ -1901,7 +2101,6 @@
                     recordedBy: currentUser?.email || 'unknown'
                 });
 
-                // Add to masterlist if not exists
                 await set(ref(database, `sections/${currentSection}/masterlist/${studentId}`), {
                     studentId: studentId,
                     studentName: name,
@@ -2020,7 +2219,7 @@
         });
 
         window.toggleAuth = () => {
-            if (currentUser) {
+            if (auth.currentUser) {
                 signOut(auth).then(() => showToast('Signed out', 'success'));
             }
         };
@@ -2048,6 +2247,7 @@
         window.closeSectionModal = () => {
             document.getElementById('sectionModal').classList.remove('active');
             stopQRScanner();
+            hideSectionForm();
         };
 
         function showWelcomeState() {
@@ -2106,7 +2306,6 @@
             });
         }
 
-        // Create particles
         function createParticles() {
             const container = document.getElementById('particles');
             for (let i = 0; i < 50; i++) {
@@ -2121,7 +2320,6 @@
 
         createParticles();
 
-        // Close modals on backdrop click
         document.getElementById('manualModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) closeManualModal();
         });
