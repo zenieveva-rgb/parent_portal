@@ -1,4 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+
+fixed_script = '''import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { 
     getDatabase, 
     ref, 
@@ -38,12 +39,12 @@ const auth = getAuth(app);
 
 // ==================== SECURITY CONFIG ====================
 const SECURITY = {
-    ADMIN_EMAIL: "depeddcp11@gmail.com",  // Your recovery email
-    DELETE_PASSWORD: "Admin123!",         // Default password
-    PASSWORD_HASH_PATH: "systemConfig/deletePassword",  // Where password hash is stored
-    SESSION_TIMEOUT: 30 * 60 * 1000,     // 30 minutes in milliseconds
-    MAX_ATTEMPTS: 5,                      // Max failed attempts before lockout
-    LOCKOUT_TIME: 5 * 60 * 1000          // 5 minutes lockout in milliseconds
+    ADMIN_EMAIL: "depeddcp11@gmail.com",
+    DELETE_PASSWORD: "Admin123!",
+    PASSWORD_HASH_PATH: "systemConfig/deletePassword",
+    SESSION_TIMEOUT: 30 * 60 * 1000,
+    MAX_ATTEMPTS: 5,
+    LOCKOUT_TIME: 5 * 60 * 1000
 };
 
 // ==================== GLOBAL STATE ====================
@@ -59,13 +60,18 @@ const state = {
     bcryptLoaded: false
 };
 
-// ==================== LOAD BCRYPT (FIXED CDN) ====================
+// ==================== LOAD BCRYPT ====================
 async function loadBcrypt() {
     if (state.bcryptLoaded) return true;
     
     return new Promise((resolve, reject) => {
+        if (window.dcodeIO?.bcrypt) {
+            state.bcryptLoaded = true;
+            resolve(true);
+            return;
+        }
+        
         const script = document.createElement('script');
-        // Use jsDelivr CDN which is more reliable [^53^]
         script.src = "https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js";
         script.onload = () => {
             state.bcryptLoaded = true;
@@ -85,12 +91,10 @@ async function initializeSecurity() {
     try {
         await loadBcrypt();
         
-        // Check if password hash exists, if not create default
         const hashRef = ref(db, SECURITY.PASSWORD_HASH_PATH);
         const snapshot = await get(hashRef);
         
         if (!snapshot.exists()) {
-            // Create default password "Admin123!" hashed
             const defaultHash = await hashPassword("Admin123!");
             await set(hashRef, {
                 hash: defaultHash,
@@ -137,7 +141,6 @@ function setupAuthListener() {
 
 // ==================== SECURITY MODAL FUNCTIONS ====================
 function showPasswordModal(deleteAction) {
-    // Check lockout
     if (state.lockoutUntil && Date.now() < state.lockoutUntil) {
         const remaining = Math.ceil((state.lockoutUntil - Date.now()) / 1000);
         showToast(`Too many attempts. Try again in ${remaining}s`, "error");
@@ -152,6 +155,8 @@ function showPasswordModal(deleteAction) {
     const forgotLink = document.getElementById('forgotPassword');
     const toggleBtn = document.getElementById('togglePassword');
     
+    if (!modal) return;
+    
     state.pendingDelete = deleteAction;
     error.textContent = '';
     input.value = '';
@@ -160,42 +165,47 @@ function showPasswordModal(deleteAction) {
     setTimeout(() => modal.classList.add('active'), 10);
     input.focus();
     
-    // Toggle password visibility
-    toggleBtn.onclick = () => {
-        const type = input.type === 'password' ? 'text' : 'password';
-        input.type = type;
-        toggleBtn.innerHTML = `<i class="fa-solid fa-eye${type === 'password' ? '' : '-slash'}"></i>`;
-    };
+    if (toggleBtn) {
+        toggleBtn.onclick = () => {
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            toggleBtn.innerHTML = `<i class="fa-solid fa-eye${type === 'password' ? '' : '-slash'}"></i>`;
+        };
+    }
     
-    // Confirm button
-    confirmBtn.onclick = async () => {
-        const password = input.value;
-        if (!password) {
-            error.textContent = 'Please enter password';
-            return;
-        }
-        
-        await verifyAndProceed(password);
-    };
+    if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+            const password = input.value;
+            if (!password) {
+                error.textContent = 'Please enter password';
+                return;
+            }
+            await verifyAndProceed(password);
+        };
+    }
     
-    // Cancel button
-    cancelBtn.onclick = closePasswordModal;
+    if (cancelBtn) {
+        cancelBtn.onclick = closePasswordModal;
+    }
     
-    // Forgot password
-    forgotLink.onclick = (e) => {
-        e.preventDefault();
-        closePasswordModal();
-        showResetModal();
-    };
+    if (forgotLink) {
+        forgotLink.onclick = (e) => {
+            e.preventDefault();
+            closePasswordModal();
+            showResetModal();
+        };
+    }
     
-    // Enter key
-    input.onkeypress = (e) => {
-        if (e.key === 'Enter') confirmBtn.click();
-    };
+    if (input) {
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') confirmBtn?.click();
+        };
+    }
 }
 
 function closePasswordModal() {
     const modal = document.getElementById('passwordModal');
+    if (!modal) return;
     modal.classList.remove('active');
     setTimeout(() => {
         modal.style.display = 'none';
@@ -208,54 +218,61 @@ function showResetModal() {
     const sendBtn = document.getElementById('sendReset');
     const cancelBtn = document.getElementById('cancelReset');
     
+    if (!modal) return;
+    
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('active'), 10);
     
-    sendBtn.onclick = async () => {
-        showLoading(true);
-        try {
-            // FIXED: Proper Firebase Auth password reset with actionCodeSettings [^46^]
-            const actionCodeSettings = {
-                url: window.location.href, // Redirect back to current page after reset
-                handleCodeInApp: false
-            };
-            
-            await sendPasswordResetEmail(auth, SECURITY.ADMIN_EMAIL, actionCodeSettings);
-            showToast("Reset link sent to depeddcp11@gmail.com!", "success");
-            closeResetModal();
-        } catch (error) {
-            console.error("Reset error:", error);
-            let errorMsg = "Failed to send reset email";
-            if (error.code === 'auth/user-not-found') {
-                errorMsg = "Admin account not found. Creating account...";
-                // Create the user first
-                try {
-                    await createUserWithEmailAndPassword(auth, SECURITY.ADMIN_EMAIL, "TempPass123!");
-                    await sendPasswordResetEmail(auth, SECURITY.ADMIN_EMAIL, actionCodeSettings);
-                    errorMsg = "Account created! Reset link sent to email.";
-                } catch (createError) {
-                    errorMsg = "Failed to create admin account";
+    if (sendBtn) {
+        sendBtn.onclick = async () => {
+            showLoading(true);
+            try {
+                const actionCodeSettings = {
+                    url: window.location.href,
+                    handleCodeInApp: false
+                };
+                
+                await sendPasswordResetEmail(auth, SECURITY.ADMIN_EMAIL, actionCodeSettings);
+                showToast("Reset link sent to depeddcp11@gmail.com!", "success");
+                closeResetModal();
+            } catch (error) {
+                console.error("Reset error:", error);
+                let errorMsg = "Failed to send reset email";
+                if (error.code === 'auth/user-not-found') {
+                    errorMsg = "Admin account not found. Creating account...";
+                    try {
+                        await createUserWithEmailAndPassword(auth, SECURITY.ADMIN_EMAIL, "TempPass123!");
+                        await sendPasswordResetEmail(auth, SECURITY.ADMIN_EMAIL, actionCodeSettings);
+                        errorMsg = "Account created! Reset link sent to email.";
+                    } catch (createError) {
+                        errorMsg = "Failed to create admin account";
+                    }
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = "Invalid email configuration";
                 }
-            } else if (error.code === 'auth/invalid-email') {
-                errorMsg = "Invalid email configuration";
+                showToast(errorMsg, "error");
             }
-            showToast(errorMsg, "error");
-        }
-        showLoading(false);
-    };
+            showLoading(false);
+        };
+    }
     
-    cancelBtn.onclick = closeResetModal;
+    if (cancelBtn) {
+        cancelBtn.onclick = closeResetModal;
+    }
 }
 
 function closeResetModal() {
     const modal = document.getElementById('resetModal');
+    if (!modal) return;
     modal.classList.remove('active');
     setTimeout(() => modal.style.display = 'none', 300);
 }
 
 function showLoading(show) {
     const loading = document.getElementById('securityLoading');
-    loading.style.display = show ? 'flex' : 'none';
+    if (loading) {
+        loading.style.display = show ? 'flex' : 'none';
+    }
 }
 
 // ==================== VERIFY PASSWORD ====================
@@ -263,7 +280,6 @@ async function verifyAndProceed(password) {
     showLoading(true);
     
     try {
-        // Get stored hash
         const hashRef = ref(db, SECURITY.PASSWORD_HASH_PATH);
         const snapshot = await get(hashRef);
         const storedData = snapshot.val();
@@ -272,23 +288,17 @@ async function verifyAndProceed(password) {
             throw new Error("Security configuration not found");
         }
         
-        // Verify using bcrypt
         const isValid = await verifyPassword(password, storedData.hash);
         
         if (isValid) {
-            // Reset failed attempts
             state.failedAttempts = 0;
             state.lockoutUntil = null;
-            
-            // Set authentication session
             state.isAuthenticated = true;
             state.authExpiry = Date.now() + SECURITY.SESSION_TIMEOUT;
             
-            // Sign in to Firebase Auth for additional security
             try {
                 await signInWithEmailAndPassword(auth, SECURITY.ADMIN_EMAIL, password);
             } catch (authError) {
-                // If user doesn't exist, create them
                 if (authError.code === 'auth/user-not-found') {
                     await createUserWithEmailAndPassword(auth, SECURITY.ADMIN_EMAIL, password);
                 } else if (authError.code !== 'auth/wrong-password') {
@@ -298,7 +308,6 @@ async function verifyAndProceed(password) {
             
             closePasswordModal();
             
-            // Execute pending delete
             if (state.pendingDelete) {
                 await executeDelete(state.pendingDelete);
             }
@@ -322,10 +331,10 @@ function handleFailedAttempt() {
     const errorEl = document.getElementById('passwordError');
     if (state.failedAttempts >= SECURITY.MAX_ATTEMPTS) {
         state.lockoutUntil = Date.now() + SECURITY.LOCKOUT_TIME;
-        errorEl.textContent = `Too many failed attempts. Locked for 5 minutes.`;
+        if (errorEl) errorEl.textContent = `Too many failed attempts. Locked for 5 minutes.`;
         showToast("Security lockout activated", "error");
     } else {
-        errorEl.textContent = `Invalid password. ${remaining} attempts remaining.`;
+        if (errorEl) errorEl.textContent = `Invalid password. ${remaining} attempts remaining.`;
         showToast(`Invalid password. ${remaining} attempts left.`, "error");
     }
 }
@@ -376,9 +385,7 @@ async function restoreItem(trashKey) {
 
         const updates = {};
         
-        // Check if it's a single log or student data
         if (entry.logs && Array.isArray(entry.logs)) {
-            // Student data with multiple logs
             entry.logs.forEach(log => {
                 if (log.originalKey) {
                     const logData = { ...log };
@@ -387,19 +394,16 @@ async function restoreItem(trashKey) {
                 }
             });
         } else {
-            // Single log entry
             const logData = { ...entry };
             delete logData.originalKey;
             if (entry.originalKey) {
                 updates[`attendance/${entry.originalKey}`] = logData;
             } else {
-                // Generate new key if originalKey doesn't exist
                 const newKey = push(ref(db, 'attendance')).key;
                 updates[`attendance/${newKey}`] = logData;
             }
         }
         
-        // Remove from trash
         updates[`trash/${trashKey}`] = null;
         
         await update(ref(db), updates);
@@ -435,7 +439,6 @@ window.secureEmptyTrash = () => {
 window.changeAdminPassword = async (oldPassword, newPassword) => {
     showLoading(true);
     try {
-        // Verify old password
         const hashRef = ref(db, SECURITY.PASSWORD_HASH_PATH);
         const snapshot = await get(hashRef);
         const storedData = snapshot.val();
@@ -447,17 +450,14 @@ window.changeAdminPassword = async (oldPassword, newPassword) => {
             return false;
         }
         
-        // Hash new password
         const newHash = await hashPassword(newPassword);
         
-        // Update in database
         await set(hashRef, {
             hash: newHash,
             updatedAt: new Date().toISOString(),
             mustChange: false
         });
         
-        // Update Firebase Auth password
         const user = auth.currentUser;
         if (user) {
             await updatePassword(user, newPassword);
@@ -851,133 +851,117 @@ function initModalHandlers() {
         });
     }
 }
-// Manual Attendance Functionality
-const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
-const manualAttendanceModal = document.getElementById('manualAttendanceModal');
-const cancelManual = document.getElementById('cancelManual');
-const confirmManual = document.getElementById('confirmManual');
-const manualStudentName = document.getElementById('manualStudentName');
-const manualGradeSection = document.getElementById('manualGradeSection');
-const manualError = document.getElementById('manualError');
 
-// Open manual attendance modal
-manualAttendanceBtn.addEventListener('click', () => {
-    manualAttendanceModal.style.display = 'flex';
-    manualStudentName.value = '';
-    manualGradeSection.value = '';
-    manualError.textContent = '';
-    manualStudentName.focus();
-});
-
-// Close modal on cancel
-cancelManual.addEventListener('click', () => {
-    manualAttendanceModal.style.display = 'none';
-});
-
-// Close modal when clicking outside
-manualAttendanceModal.addEventListener('click', (e) => {
-    if (e.target === manualAttendanceModal) {
-        manualAttendanceModal.style.display = 'none';
-    }
-});
-
-// Confirm manual attendance
-confirmManual.addEventListener('click', async () => {
-    const name = manualStudentName.value.trim();
-    const gradeSection = manualGradeSection.value.trim();
-
-    // Validation
-    if (!name) {
-        manualError.textContent = 'Please enter student name';
-        return;
-    }
-    if (!gradeSection) {
-        manualError.textContent = 'Please enter grade/section';
+// ==================== MANUAL ATTENDANCE ====================
+function initManualAttendance() {
+    const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
+    const manualAttendanceModal = document.getElementById('manualAttendanceModal');
+    
+    // Exit if elements don't exist on this page
+    if (!manualAttendanceBtn || !manualAttendanceModal) {
+        console.log('Manual attendance elements not found on this page');
         return;
     }
 
-    // Create attendance data object
-    const attendanceData = {
-        name: name,
-        gradeSection: gradeSection,
-        timestamp: new Date().toISOString(),
-        time: new Date().toLocaleTimeString(),
-        date: new Date().toLocaleDateString(),
-        type: 'manual' // Optional: to distinguish manual entries from scans
-    };
+    const cancelManual = document.getElementById('cancelManual');
+    const confirmManual = document.getElementById('confirmManual');
+    const manualStudentName = document.getElementById('manualStudentName');
+    const manualGradeSection = document.getElementById('manualGradeSection');
+    const manualError = document.getElementById('manualError');
 
-    try {
-        // Add to Firebase (adjust the database path as per your structure)
-        // Example using Firebase Realtime Database:
-        const newEntryRef = push(ref(database, 'attendance'));
-        await set(newEntryRef, attendanceData);
-        
-        // Or if you're using Firestore:
-        // await addDoc(collection(db, 'attendance'), attendanceData);
-        
-        console.log('Manual attendance added:', attendanceData);
-        
-        // Close modal
-        manualAttendanceModal.style.display = 'none';
-        
-        // Optional: Show success notification
-        showNotification('Attendance added successfully!', 'success');
-        
-    } catch (error) {
-        console.error('Error adding manual attendance:', error);
-        manualError.textContent = 'Error saving attendance. Please try again.';
-    }
-});
+    // Open modal
+    manualAttendanceBtn.addEventListener('click', () => {
+        manualAttendanceModal.style.display = 'flex';
+        setTimeout(() => manualAttendanceModal.classList.add('active'), 10);
+        manualStudentName.value = '';
+        manualGradeSection.value = '';
+        manualError.textContent = '';
+        manualStudentName.focus();
+    });
 
-// Allow Enter key to submit
-manualGradeSection.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        confirmManual.click();
+    // Close modal function
+    function closeManualModal() {
+        manualAttendanceModal.classList.remove('active');
+        setTimeout(() => {
+            manualAttendanceModal.style.display = 'none';
+        }, 300);
     }
-});
-manualStudentName.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        manualGradeSection.focus();
-    }
-});
 
-// Optional: Notification function
-function showNotification(message, type = 'success') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    // Add styles (you can also add these to your CSS file)
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)'};
-        color: white;
-        padding: 15px 20px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 600;
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    // Close handlers
+    if (cancelManual) {
+        cancelManual.addEventListener('click', closeManualModal);
+    }
+
+    manualAttendanceModal.addEventListener('click', (e) => {
+        if (e.target === manualAttendanceModal) {
+            closeManualModal();
+        }
+    });
+
+    // Confirm handler
+    if (confirmManual) {
+        confirmManual.addEventListener('click', async () => {
+            const name = manualStudentName.value.trim();
+            const gradeSection = manualGradeSection.value.trim();
+
+            if (!name) {
+                manualError.textContent = 'Please enter student name';
+                return;
+            }
+            if (!gradeSection) {
+                manualError.textContent = 'Please enter grade/section';
+                return;
+            }
+
+            confirmManual.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Adding...';
+            confirmManual.disabled = true;
+
+            try {
+                const now = new Date();
+                const attendanceData = {
+                    studentName: name,
+                    grade: gradeSection,
+                    time: now.toISOString(),
+                    scannedAt: now.toISOString(),
+                    type: 'manual',
+                    addedBy: 'admin',
+                    timestamp: now.getTime()
+                };
+
+                const newEntryRef = push(ref(db, 'attendance'));
+                await set(newEntryRef, attendanceData);
+                
+                closeManualModal();
+                showToast('Manual attendance added successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error adding manual attendance:', error);
+                manualError.textContent = 'Error saving attendance. Please try again.';
+            } finally {
+                confirmManual.innerHTML = '<i class="fa-solid fa-plus"></i> Add Attendance';
+                confirmManual.disabled = false;
+            }
+        });
+    }
+
+    // Keyboard navigation
+    if (manualStudentName) {
+        manualStudentName.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                manualGradeSection?.focus();
+            }
+        });
+    }
+
+    if (manualGradeSection) {
+        manualGradeSection.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                confirmManual?.click();
+            }
+        });
+    }
 }
+
 // ==================== PARTICLES ====================
 function initParticles() {
     const container = document.getElementById('particles');
@@ -999,114 +983,6 @@ window.addEventListener('beforeunload', () => {
         off(ref(db, 'attendance'), 'value', state.unsubscribeAttendance);
     }
 });
-function initManualAttendance() {
-    const manualAttendanceBtn = document.getElementById('manualAttendanceBtn');
-    const manualAttendanceModal = document.getElementById('manualAttendanceModal');
-    const cancelManual = document.getElementById('cancelManual');
-    const confirmManual = document.getElementById('confirmManual');
-    const manualStudentName = document.getElementById('manualStudentName');
-    const manualGradeSection = document.getElementById('manualGradeSection');
-    const manualError = document.getElementById('manualError');
-
-    if (!manualAttendanceBtn) return; // Exit if button doesn't exist on this page
-
-    // Open manual attendance modal
-    manualAttendanceBtn.addEventListener('click', () => {
-        manualAttendanceModal.style.display = 'flex';
-        setTimeout(() => manualAttendanceModal.classList.add('active'), 10);
-        manualStudentName.value = '';
-        manualGradeSection.value = '';
-        manualError.textContent = '';
-        manualStudentName.focus();
-    });
-
-    // Close modal functions
-    function closeManualModal() {
-        manualAttendanceModal.classList.remove('active');
-        setTimeout(() => {
-            manualAttendanceModal.style.display = 'none';
-        }, 300);
-    }
-
-    // Close modal on cancel
-    cancelManual.addEventListener('click', closeManualModal);
-
-    // Close modal when clicking outside
-    manualAttendanceModal.addEventListener('click', (e) => {
-        if (e.target === manualAttendanceModal) {
-            closeManualModal();
-        }
-    });
-
-    // Confirm manual attendance
-    confirmManual.addEventListener('click', async () => {
-        const name = manualStudentName.value.trim();
-        const gradeSection = manualGradeSection.value.trim();
-
-        // Validation
-        if (!name) {
-            manualError.textContent = 'Please enter student name';
-            return;
-        }
-        if (!gradeSection) {
-            manualError.textContent = 'Please enter grade/section';
-            return;
-        }
-
-        // Show loading state
-        confirmManual.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adding...';
-        confirmManual.disabled = true;
-
-        try {
-            // Create attendance data object matching your existing structure
-            const now = new Date();
-            const attendanceData = {
-                studentName: name,
-                grade: gradeSection,
-                time: now.toISOString(),
-                scannedAt: now.toISOString(),
-                type: 'manual',
-                addedBy: 'admin',
-                timestamp: now.getTime()
-            };
-
-            // Add to Firebase using the existing db reference
-            const newEntryRef = push(ref(db, 'attendance'));
-            await set(newEntryRef, attendanceData);
-            
-            console.log('Manual attendance added:', attendanceData);
-            
-            // Close modal
-            closeManualModal();
-            
-            // Show success toast using your existing toast system
-            showToast('Manual attendance added successfully!', 'success');
-            
-            // Reset button state
-            confirmManual.innerHTML = 'Add Attendance';
-            confirmManual.disabled = false;
-            
-        } catch (error) {
-            console.error('Error adding manual attendance:', error);
-            manualError.textContent = 'Error saving attendance. Please try again.';
-            confirmManual.innerHTML = 'Add Attendance';
-            confirmManual.disabled = false;
-        }
-    });
-
-    // Allow Enter key to navigate between fields and submit
-    manualStudentName.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            manualGradeSection.focus();
-        }
-    });
-
-    manualGradeSection.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            confirmManual.click();
-        }
-    });
-}
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1115,19 +991,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initModalHandlers();
     initParticles();
-    initManualAttendance(); // <-- ADD THIS LINE
+    initManualAttendance();
     setupDataListener();
     initializeSecurity();
 });
+'''
 
+with open('/mnt/kimi/output/script.js', 'w') as f:
+    f.write(fixed_script)
 
-// ==================== INITIALIZATION ====================
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("Initializing Parent Portal with Security...");
-    initNavigation();
-    initSearch();
-    initModalHandlers();
-    initParticles();
-    setupDataListener();
-    initializeSecurity(); // Initialize security system
-});
+print("✅ script.js fixed with null checks")
