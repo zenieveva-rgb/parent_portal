@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Pro | Section Monitor</title>
+    <title>Attendance Pro | Dynamic Section Manager</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
@@ -350,7 +351,7 @@
             75% { transform: translateX(10px); }
         }
 
-        /* Section Selector Modal */
+        /* Section Management Modal */
         .section-modal {
             position: fixed;
             top: 0;
@@ -365,6 +366,7 @@
             align-items: center;
             opacity: 0;
             transition: opacity 0.3s;
+            overflow-y: auto;
         }
 
         .section-modal.active {
@@ -378,11 +380,12 @@
             border-radius: 24px;
             padding: 40px;
             width: 90%;
-            max-width: 500px;
+            max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
             transform: scale(0.9);
             transition: transform 0.3s;
+            margin: 20px;
         }
 
         .section-modal.active .section-container {
@@ -390,81 +393,205 @@
         }
 
         .section-header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .section-header h2 {
             font-size: 1.8rem;
-            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .section-header p {
-            color: var(--text-secondary);
+        .section-header h2 i {
+            color: var(--primary);
         }
 
-        .section-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .section-btn {
-            padding: 20px 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid var(--glass-border);
-            border-radius: 16px;
-            color: var(--text-primary);
+        .add-section-btn {
+            padding: 12px 24px;
+            background: var(--success);
+            border: none;
+            border-radius: 12px;
+            color: white;
             font-family: inherit;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
-        .section-btn:hover {
+        .add-section-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Section List */
+        .section-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .section-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-1);
+            transform: scaleY(0);
+            transition: transform 0.3s;
+        }
+
+        .section-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .section-item:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .section-item.active {
             background: rgba(99, 102, 241, 0.1);
             border-color: var(--primary);
-            transform: translateY(-3px);
         }
 
-        .section-btn.active {
+        .section-item.active::before {
+            transform: scaleY(1);
+        }
+
+        .section-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .section-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .section-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .section-btn-sm {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: none;
+            background: var(--glass);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-btn-sm:hover {
             background: var(--primary);
-            border-color: var(--primary);
-            box-shadow: var(--shadow-glow);
+            color: white;
         }
 
-        .section-btn i {
-            font-size: 1.5rem;
+        .section-btn-sm.delete:hover {
+            background: var(--danger);
         }
 
-        /* Parent Verification Form */
-        .parent-form {
+        /* QR Scanner Container */
+        .qr-container {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px dashed var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        #qr-reader {
+            width: 100% !important;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        #qr-reader__scan_region {
+            background: rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .scan-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .scan-result.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        /* Edit Section Form */
+        .edit-form {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 25px;
-            margin-top: 20px;
+            margin-bottom: 25px;
+            display: none;
         }
 
-        .parent-form h3 {
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .edit-form.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
         }
 
-        .parent-form h3 i {
-            color: var(--accent);
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Main Container */
         .main-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
             opacity: 0;
@@ -520,10 +647,10 @@
         .section-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
+            gap: 10px;
+            padding: 12px 24px;
             background: var(--glass);
-            border: 1px solid var(--glass-border);
+            border: 2px solid var(--glass-border);
             border-radius: 50px;
             font-weight: 600;
             color: var(--primary);
@@ -534,16 +661,16 @@
         .section-badge:hover {
             background: rgba(99, 102, 241, 0.1);
             border-color: var(--primary);
+            transform: translateY(-2px);
         }
 
         .section-badge i {
-            font-size: 0.9rem;
+            font-size: 1rem;
         }
 
-        .user-section {
+        .quick-actions {
             display: flex;
-            align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
 
         .btn {
@@ -592,73 +719,122 @@
             background: rgba(16, 185, 129, 0.2);
         }
 
-        /* Stats Grid */
-        .stats-grid {
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: 300px 1fr;
+            gap: 25px;
             margin-bottom: 30px;
         }
 
-        .stat-card {
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
             background: var(--glass);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 25px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
+            height: fit-content;
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--gradient-1);
+        .sidebar-header {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .stat-card:nth-child(2)::before { background: var(--gradient-2); }
-        .stat-card:nth-child(3)::before { background: var(--gradient-3); }
-        .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(99, 102, 241, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        .sidebar-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
         }
 
-        .stat-icon {
-            width: 50px;
-            height: 50px;
+        .section-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
             border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .section-menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glass-border);
+        }
+
+        .section-menu-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+        }
+
+        .section-menu-item i {
+            width: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .section-menu-item.active i {
+            color: var(--primary);
+        }
+
+        .manage-sections-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px dashed var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
+            gap: 8px;
         }
 
-        .stat-card:nth-child(1) .stat-icon { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
-        .stat-card:nth-child(2) .stat-icon { background: rgba(236, 72, 153, 0.1); color: var(--secondary); }
-        .stat-card:nth-child(3) .stat-icon { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
-        .stat-card:nth-child(4) .stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 5px;
+        .manage-sections-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
         }
 
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+        /* Main Content Area */
+        .content-area {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 25px;
         }
 
-        /* Controls Section */
-        .controls-section {
+        .content-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -667,58 +843,67 @@
             gap: 15px;
         }
 
-        .search-box {
-            position: relative;
-            flex: 1;
-            max-width: 400px;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 14px 20px 14px 50px;
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-            outline: none;
-        }
-
-        .search-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        .actions-group {
+        .content-header h2 {
+            font-size: 1.5rem;
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 12px;
         }
 
-        /* Table Container */
-        .table-container {
-            background: var(--glass);
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card-sm {
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card-sm:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .stat-value-sm {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label-sm {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Table */
+        .table-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
         .table-header {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 0.5fr;
-            padding: 20px 25px;
-            background: rgba(0, 0, 0, 0.2);
-            border-bottom: 1px solid var(--glass-border);
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
@@ -727,37 +912,17 @@
         }
 
         .table-body {
-            max-height: 500px;
+            max-height: 400px;
             overflow-y: auto;
-        }
-
-        .table-body::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .table-body::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .table-body::-webkit-scrollbar-thumb {
-            background: var(--glass-border);
-            border-radius: 4px;
         }
 
         .table-row {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 0.5fr;
-            padding: 18px 25px;
+            padding: 15px 20px;
             border-bottom: 1px solid var(--glass-border);
             align-items: center;
             transition: all 0.3s;
-            opacity: 0;
-            transform: translateX(-20px);
-            animation: rowSlide 0.4s forwards;
-        }
-
-        @keyframes rowSlide {
-            to { opacity: 1; transform: translateX(0); }
         }
 
         .table-row:hover {
@@ -767,10 +932,10 @@
         .student-cell {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
-        .student-avatar-sm {
+        .student-avatar {
             width: 40px;
             height: 40px;
             background: var(--gradient-1);
@@ -788,43 +953,52 @@
         }
 
         .student-info span {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
         }
 
-        .grade-badge {
+        .status-badge {
             display: inline-flex;
-            padding: 6px 14px;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: var(--primary);
         }
 
-        .time-cell {
+        .status-present {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-absent {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .time-display {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
-        .time-cell i {
+        .time-display i {
             color: var(--accent);
         }
 
-        .action-cell {
+        .action-btns {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: flex-end;
         }
 
-        .action-btn-sm {
-            width: 35px;
-            height: 35px;
-            border-radius: 10px;
+        .action-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             border: none;
             background: var(--glass);
             color: var(--text-secondary);
@@ -835,12 +1009,12 @@
             justify-content: center;
         }
 
-        .action-btn-sm:hover {
+        .action-icon:hover {
             background: var(--danger);
             color: white;
-            transform: scale(1.1);
         }
 
+        /* Empty States */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -858,6 +1032,41 @@
             margin-bottom: 10px;
             color: var(--text-primary);
         }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .toast.warning { border-color: var(--warning); }
 
         /* Modal */
         .modal-overlay {
@@ -898,20 +1107,16 @@
         }
 
         .modal-header {
-            padding: 30px;
+            padding: 25px;
             border-bottom: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .modal-header h3 {
-            font-size: 1.3rem;
-        }
-
         .modal-close {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             border: none;
             background: var(--glass);
@@ -923,106 +1128,21 @@
         .modal-close:hover {
             background: var(--danger);
             color: white;
-            transform: rotate(90deg);
         }
 
         .modal-body {
-            padding: 30px;
+            padding: 25px;
         }
 
         .modal-footer {
-            padding: 20px 30px;
+            padding: 20px 25px;
             border-top: 1px solid var(--glass-border);
             display: flex;
             justify-content: flex-end;
             gap: 10px;
         }
 
-        /* Toast Notifications */
-        .toast-container {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 10001;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            transform: translateX(100%);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            min-width: 300px;
-        }
-
-        .toast.show {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .toast.success { border-color: var(--success); }
-        .toast.error { border-color: var(--danger); }
-        .toast.warning { border-color: var(--warning); }
-
-        .toast-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .toast.success .toast-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .toast.error .toast-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-        .toast.warning .toast-icon { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .table-header,
-            .table-row {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            
-            .table-header {
-                display: none;
-            }
-            
-            .table-row {
-                padding: 20px;
-                border-radius: 12px;
-                margin-bottom: 10px;
-                border: 1px solid var(--glass-border);
-            }
-            
-            .action-cell {
-                justify-content: flex-start;
-                margin-top: 10px;
-                padding-top: 10px;
-                border-top: 1px solid var(--glass-border);
-            }
-            
-            .section-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        /* Loading Spinner */
+        /* Loading */
         .spinner {
             width: 20px;
             height: 20px;
@@ -1036,48 +1156,26 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Live Badge */
-        .live-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--success);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--success);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-
-        .status-present {
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        .status-absent {
-            color: var(--danger);
-            font-weight: 600;
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .table-header,
+            .table-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .table-header {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Background Animation -->
+    <!-- Background -->
     <div class="bg-animation"></div>
     <div class="particles" id="particles"></div>
 
@@ -1104,17 +1202,17 @@
 
             <form class="auth-form active" id="loginForm">
                 <div class="input-group">
-                    <label class="input-label">Email Address</label>
+                    <label class="input-label">Email</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-envelope input-icon"></i>
-                        <input type="email" class="auth-input" id="loginEmail" placeholder="Enter your email" required>
+                        <input type="email" class="auth-input" id="loginEmail" placeholder="Enter email" required>
                     </div>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Password</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-lock input-icon"></i>
-                        <input type="password" class="auth-input" id="loginPassword" placeholder="Enter your password" required>
+                        <input type="password" class="auth-input" id="loginPassword" placeholder="Enter password" required>
                         <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
                             <i class="fa-solid fa-eye"></i>
                         </button>
@@ -1130,21 +1228,21 @@
                     <label class="input-label">Full Name</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" class="auth-input" id="regName" placeholder="Enter your full name" required>
+                        <input type="text" class="auth-input" id="regName" placeholder="Full name" required>
                     </div>
                 </div>
                 <div class="input-group">
-                    <label class="input-label">Email Address</label>
+                    <label class="input-label">Email</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-envelope input-icon"></i>
-                        <input type="email" class="auth-input" id="regEmail" placeholder="Enter your email" required>
+                        <input type="email" class="auth-input" id="regEmail" placeholder="Email" required>
                     </div>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Password</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-lock input-icon"></i>
-                        <input type="password" class="auth-input" id="regPassword" placeholder="Create password (min 6 chars)" required minlength="6">
+                        <input type="password" class="auth-input" id="regPassword" placeholder="Password (min 6 chars)" required minlength="6">
                         <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">
                             <i class="fa-solid fa-eye"></i>
                         </button>
@@ -1154,69 +1252,87 @@
                     <span>Create Account</span>
                 </button>
             </form>
-
-            <div class="auth-divider" style="display: flex; align-items: center; gap: 15px; margin: 25px 0; color: var(--text-secondary); font-size: 0.85rem;">
-                <span style="flex: 1; height: 1px; background: var(--glass-border);"></span>
-                or continue with
-                <span style="flex: 1; height: 1px; background: var(--glass-border);"></span>
-            </div>
-            
-            <button class="auth-btn" style="background: #4285F4;" onclick="googleSignIn()">
-                <i class="fa-brands fa-google"></i>
-                <span>Google</span>
-            </button>
         </div>
     </div>
 
-    <!-- Section Selection Modal -->
+    <!-- Section Management Modal -->
     <div class="section-modal" id="sectionModal">
         <div class="section-container">
             <div class="section-header">
-                <h2><i class="fa-solid fa-school" style="color: var(--primary);"></i> Select Section</h2>
-                <p>Choose a section to view or manage attendance</p>
-            </div>
-
-            <div class="section-grid" id="sectionGrid">
-                <!-- Sections generated by JS -->
-            </div>
-
-            <div class="parent-form" id="parentVerificationForm" style="display: none;">
-                <h3><i class="fa-solid fa-user-shield"></i> Parent Verification</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">
-                    Enter your child's details to view their attendance record.
-                </p>
-                <div class="input-group">
-                    <label class="input-label">Student Name</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" class="auth-input" id="verifyStudentName" placeholder="e.g. Juan Dela Cruz" style="padding-left: 48px;">
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label class="input-label">LRN / Student ID</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-id-card input-icon"></i>
-                        <input type="text" class="auth-input" id="verifyStudentId" placeholder="Enter LRN or Student ID" style="padding-left: 48px;">
-                    </div>
-                </div>
-                <button class="auth-btn" onclick="verifyParent()">
-                    <i class="fa-solid fa-search"></i>
-                    Find Student
+                <h2><i class="fa-solid fa-cog"></i> Manage Sections</h2>
+                <button class="add-section-btn" onclick="showAddSectionForm()">
+                    <i class="fa-solid fa-plus"></i>
+                    Add Section
                 </button>
             </div>
 
-            <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="closeSectionModal()">
+            <!-- Add/Edit Section Form -->
+            <div class="edit-form" id="sectionEditForm">
+                <h3 style="margin-bottom: 20px;" id="formTitle">Add New Section</h3>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label class="input-label">Grade Level</label>
+                        <select class="auth-input" id="gradeLevel" style="padding-left: 16px;">
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Section Name</label>
+                        <input type="text" class="auth-input" id="sectionNameInput" placeholder="e.g. Sincerity, A, Rose" style="padding-left: 16px;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Full Section ID (auto-generated)</label>
+                    <input type="text" class="auth-input" id="sectionIdInput" placeholder="12-Sincerity" readonly style="padding-left: 16px; background: rgba(255,255,255,0.03);">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="hideSectionForm()" style="flex: 1;">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="saveSection()" style="flex: 1;">
+                        <i class="fa-solid fa-save"></i>
+                        Save Section
+                    </button>
+                </div>
+            </div>
+
+            <!-- QR Scanner -->
+            <div class="qr-container" id="qrContainer" style="display: none;">
+                <h3 style="margin-bottom: 15px;"><i class="fa-solid fa-qrcode"></i> QR Scanner</h3>
+                <div id="qr-reader"></div>
+                <div class="scan-result" id="scanResult">
+                    <i class="fa-solid fa-check-circle" style="font-size: 2rem; color: var(--success); margin-bottom: 10px;"></i>
+                    <h4>Scan Successful!</h4>
+                    <p id="scanDetails" style="color: var(--text-secondary); margin-top: 10px;"></p>
+                </div>
+                <button class="btn btn-secondary" onclick="stopQRScanner()" style="margin-top: 15px;">
+                    <i class="fa-solid fa-stop"></i>
+                    Stop Scanner
+                </button>
+            </div>
+
+            <!-- Section List -->
+            <div class="section-list" id="sectionList">
+                <!-- Dynamic sections -->
+            </div>
+
+            <button class="btn btn-secondary" style="width: 100%;" onclick="closeSectionModal()">
                 <i class="fa-solid fa-xmark"></i>
                 Close
             </button>
         </div>
     </div>
 
-    <!-- Manual Attendance Modal -->
+    <!-- Manual Entry Modal -->
     <div class="modal-overlay" id="manualModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-user-plus" style="color: var(--success); margin-right: 10px;"></i>Manual Attendance</h3>
+                <h3><i class="fa-solid fa-user-plus" style="color: var(--success); margin-right: 10px;"></i> Manual Entry</h3>
                 <button class="modal-close" onclick="closeManualModal()">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -1224,24 +1340,17 @@
             <div class="modal-body">
                 <div class="input-group">
                     <label class="input-label">Student Name</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" class="auth-input" id="manualName" placeholder="e.g. Juan Dela Cruz" style="padding-left: 48px;">
-                    </div>
+                    <input type="text" class="auth-input" id="manualName" placeholder="e.g. Juan Dela Cruz" style="padding: 14px 16px;">
                 </div>
                 <div class="input-group">
                     <label class="input-label">Student ID / LRN</label>
-                    <div class="input-wrap">
-                        <i class="fa-solid fa-id-card input-icon"></i>
-                        <input type="text" class="auth-input" id="manualId" placeholder="Enter LRN" style="padding-left: 48px;">
-                    </div>
+                    <input type="text" class="auth-input" id="manualId" placeholder="Enter LRN" style="padding: 14px 16px;">
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeManualModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="submitManualAttendance()">
-                    <i class="fa-solid fa-check"></i>
-                    Record Attendance
+                    <i class="fa-solid fa-check"></i> Record
                 </button>
             </div>
         </div>
@@ -1250,7 +1359,7 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Main Content -->
+    <!-- Main App -->
     <div class="main-container" id="mainContainer">
         <!-- Top Bar -->
         <div class="top-bar">
@@ -1260,116 +1369,121 @@
                 </div>
                 <div class="brand-text">
                     <h1>Attendance Pro</h1>
-                    <span id="currentSectionDisplay">No Section Selected</span>
+                    <span id="currentSectionDisplay">Select a section</span>
                 </div>
             </div>
 
-            <div class="user-section">
-                <div class="live-badge" id="liveBadge" style="display: none;">
-                    <span class="live-dot"></span>
-                    Live
-                </div>
-                
+            <div class="quick-actions">
+                <button class="btn btn-success" onclick="startQRScanner()">
+                    <i class="fa-solid fa-qrcode"></i>
+                    Scan QR
+                </button>
                 <button class="section-badge" onclick="openSectionModal()">
                     <i class="fa-solid fa-layer-group"></i>
-                    <span id="sectionBtnText">Select Section</span>
+                    <span id="sectionBtnText">Sections</span>
                 </button>
-                
-                <button class="btn btn-secondary" id="authActionBtn" onclick="toggleAuth()">
+                <button class="btn btn-secondary" onclick="toggleAuth()">
                     <i class="fa-solid fa-sign-out-alt"></i>
-                    <span>Sign Out</span>
                 </button>
             </div>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="stats-grid" id="statsGrid" style="display: none;">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-users"></i>
+        <!-- Dashboard -->
+        <div class="dashboard-grid" id="dashboardGrid" style="display: none;">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fa-solid fa-list"></i> Sections</h3>
                 </div>
-                <div class="stat-value" id="totalScans">0</div>
-                <div class="stat-label">Total Present</div>
+                <div class="section-menu" id="sectionMenu">
+                    <!-- Dynamic menu items -->
+                </div>
+                <button class="manage-sections-btn" onclick="openSectionModal()">
+                    <i class="fa-solid fa-cog"></i>
+                    Manage Sections
+                </button>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-user-check"></i>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="content-header">
+                    <h2 id="contentTitle">
+                        <i class="fa-solid fa-users"></i>
+                        <span id="contentSectionName">Select a section</span>
+                    </h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="openManualModal()">
+                            <i class="fa-solid fa-user-plus"></i>
+                            Manual
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportSectionData()">
+                            <i class="fa-solid fa-download"></i>
+                            Export
+                        </button>
+                    </div>
                 </div>
-                <div class="stat-value" id="uniqueStudents">0</div>
-                <div class="stat-label">Students Scanned</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-clock"></i>
+
+                <!-- Stats -->
+                <div class="stats-row" id="statsRow">
+                    <div class="stat-card-sm">
+                        <div class="stat-value-sm" id="statPresent">0</div>
+                        <div class="stat-label-sm">Present</div>
+                    </div>
+                    <div class="stat-card-sm">
+                        <div class="stat-value-sm" id="statAbsent">0</div>
+                        <div class="stat-label-sm">Absent</div>
+                    </div>
+                    <div class="stat-card-sm">
+                        <div class="stat-value-sm" id="statRate">0%</div>
+                        <div class="stat-label-sm">Rate</div>
+                    </div>
+                    <div class="stat-card-sm">
+                        <div class="stat-value-sm" id="statTotal">0</div>
+                        <div class="stat-label-sm">Total</div>
+                    </div>
                 </div>
-                <div class="stat-value" id="lastScan">--:--</div>
-                <div class="stat-label">Last Scan</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-percentage"></i>
+
+                <!-- Attendance Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <span>Student</span>
+                        <span>Status</span>
+                        <span>Time</span>
+                        <span>Action</span>
+                    </div>
+                    <div class="table-body" id="attendanceTable">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-school"></i>
+                            <h3>No Data</h3>
+                            <p>Select a section to view attendance</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-value" id="attendanceRate">0%</div>
-                <div class="stat-label">Attendance Rate</div>
             </div>
         </div>
 
-        <!-- Controls -->
-        <div class="controls-section" id="controlsSection" style="display: none;">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" class="search-input" id="searchInput" placeholder="Search students..." oninput="filterTable()">
-            </div>
-            
-            <div class="actions-group">
-                <button class="btn btn-success" onclick="openManualModal()" id="manualBtn">
-                    <i class="fa-solid fa-user-plus"></i>
-                    Manual Entry
-                </button>
-                <button class="btn btn-secondary" onclick="exportAttendance()">
-                    <i class="fa-solid fa-download"></i>
-                    Export
-                </button>
-            </div>
-        </div>
-
-        <!-- Welcome Message (No Section Selected) -->
-        <div class="empty-state" id="welcomeState">
-            <i class="fa-solid fa-school" style="font-size: 5rem; color: var(--primary);"></i>
-            <h3>Welcome to Attendance Pro</h3>
-            <p style="max-width: 500px; margin: 0 auto 25px;">
-                Please select a section to view attendance data. Parents can verify their identity to view their child's specific record.
+        <!-- Welcome State -->
+        <div class="empty-state" id="welcomeState" style="background: var(--glass); border-radius: 24px; padding: 80px 40px;">
+            <i class="fa-solid fa-layer-group" style="font-size: 5rem; color: var(--primary);"></i>
+            <h3>Welcome to Dynamic Section Manager</h3>
+            <p style="max-width: 600px; margin: 0 auto 30px;">
+                Manage multiple sections dynamically. Add, edit, or remove sections as needed. 
+                Use QR codes for quick student check-ins.
             </p>
-            <button class="btn btn-primary" onclick="openSectionModal()" style="padding: 16px 32px; font-size: 1rem;">
-                <i class="fa-solid fa-layer-group"></i>
-                Select Section
-            </button>
-        </div>
-
-        <!-- Table -->
-        <div class="table-container" id="attendanceTableContainer" style="display: none;">
-            <div class="table-header">
-                <span>Student</span>
-                <span>Status</span>
-                <span>Time</span>
-                <span>Action</span>
-            </div>
-            <div class="table-body" id="attendanceTable">
-                <!-- Dynamic content -->
-            </div>
-        </div>
-
-        <!-- Parent View: Single Student Result -->
-        <div class="table-container" id="parentViewContainer" style="display: none;">
-            <div style="padding: 30px; text-align: center;">
-                <div id="parentStudentCard">
-                    <!-- Single student card for parent view -->
-                </div>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="openSectionModal()" style="padding: 16px 32px;">
+                    <i class="fa-solid fa-cog"></i>
+                    Manage Sections
+                </button>
+                <button class="btn btn-success" onclick="startQRScanner()" style="padding: 16px 32px;">
+                    <i class="fa-solid fa-qrcode"></i>
+                    Scan QR Code
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase Scripts -->
+    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -1378,8 +1492,6 @@
             signOut,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
-            GoogleAuthProvider,
-            signInWithPopup,
             updateProfile
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { 
@@ -1390,9 +1502,7 @@
             onValue, 
             remove,
             get,
-            query,
-            orderByChild,
-            equalTo
+            update
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -1408,327 +1518,65 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const database = getDatabase(app);
-        const googleProvider = new GoogleAuthProvider();
 
-        // Global State
+        // State
         let currentUser = null;
         let currentSection = null;
-        let currentRole = null; // 'teacher', 'parent', 'admin'
-        let sectionAttendanceData = [];
-        let allSections = [
-            '12/Sincerity', '12/Honesty', '12/Respect', '12/Responsibility',
-            '11/Sincerity', '11/Honesty', '11/Respect', '11/Responsibility',
-            '10/Sincerity', '10/Honesty', '10/Respect', '10/Responsibility',
-            '9/Sincerity', '9/Honesty', '9/Respect', '9/Responsibility',
-            '8/Sincerity', '8/Honesty', '8/Respect', '8/Responsibility',
-            '7/Sincerity', '7/Honesty', '7/Respect', '7/Responsibility'
-        ];
+        let sections = {};
+        let qrScanner = null;
+        let editingSectionId = null;
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            createParticles();
-            renderSectionGrid();
-        });
-
-        // Auth State Listener
+        // Auth Listener
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
                 document.getElementById('authOverlay').classList.remove('active');
                 document.getElementById('mainContainer').classList.add('loaded');
-                checkUserRole(user.uid);
+                loadSections();
             } else {
                 document.getElementById('authOverlay').classList.add('active');
                 document.getElementById('mainContainer').classList.remove('loaded');
-                resetToInitialState();
             }
         });
 
-        // Check user role from database
-        async function checkUserRole(uid) {
-            try {
-                const userRef = ref(database, 'users/' + uid);
-                const snapshot = await get(userRef);
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    currentRole = userData.role || 'parent';
-                } else {
-                    // New user, default to parent
-                    currentRole = 'parent';
-                    await set(userRef, {
-                        email: currentUser.email,
-                        name: currentUser.displayName || currentUser.email.split('@')[0],
-                        role: 'parent',
-                        createdAt: new Date().toISOString()
-                    });
-                }
-                openSectionModal();
-            } catch (error) {
-                console.error('Error checking role:', error);
-                currentRole = 'parent';
-                openSectionModal();
-            }
-        }
-
-        // Render Section Grid
-        function renderSectionGrid() {
-            const grid = document.getElementById('sectionGrid');
-            grid.innerHTML = allSections.map(section => `
-                <button class="section-btn" onclick="selectSection('${section}')">
-                    <i class="fa-solid fa-chalkboard-user"></i>
-                    <span>${section}</span>
-                </button>
-            `).join('');
-        }
-
-        // Select Section
-        window.selectSection = (section) => {
-            currentSection = section;
-            
-            // Update UI
-            document.querySelectorAll('.section-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.trim() === section) {
-                    btn.classList.add('active');
-                }
-            });
-
-            // Show appropriate form based on role
-            if (currentRole === 'parent') {
-                document.getElementById('parentVerificationForm').style.display = 'block';
-                document.getElementById('sectionGrid').style.display = 'none';
-            } else {
-                // Teacher/Admin - load section directly
-                loadSectionData(section);
-                closeSectionModal();
-            }
-        };
-
-        // Verify Parent and Load Specific Student
-        window.verifyParent = async () => {
-            const studentName = document.getElementById('verifyStudentName').value.trim();
-            const studentId = document.getElementById('verifyStudentId').value.trim();
-
-            if (!studentName || !studentId) {
-                showToast('Please fill in all fields', 'error');
-                return;
-            }
-
-            try {
-                // Search for student in current section
-                const sectionRef = ref(database, `sections/${currentSection}/attendance`);
-                const snapshot = await get(sectionRef);
-                
-                if (!snapshot.exists()) {
-                    showToast('No attendance records found for this section', 'error');
-                    return;
-                }
-
-                const data = snapshot.val();
-                const studentRecord = Object.entries(data).find(([key, record]) => 
-                    record.studentName?.toLowerCase() === studentName.toLowerCase() &&
-                    record.studentId === studentId
-                );
-
-                if (studentRecord) {
-                    const [key, record] = studentRecord;
-                    showParentView(record, key);
-                    closeSectionModal();
-                    showToast('Student record found!', 'success');
-                } else {
-                    // Check if student exists in masterlist but not yet scanned
-                    const masterlistRef = ref(database, `sections/${currentSection}/masterlist/${studentId}`);
-                    const masterSnapshot = await get(masterlistRef);
-                    
-                    if (masterSnapshot.exists()) {
-                        showParentView({
-                            ...masterSnapshot.val(),
-                            status: 'absent',
-                            timestamp: null
-                        }, studentId);
-                        closeSectionModal();
-                        showToast('Student found but not yet scanned today', 'warning');
-                    } else {
-                        showToast('Student not found. Please check the name and ID.', 'error');
-                    }
-                }
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        };
-
-        // Show Parent View (Single Student)
-        function showParentView(student, key) {
-            document.getElementById('welcomeState').style.display = 'none';
-            document.getElementById('attendanceTableContainer').style.display = 'none';
-            document.getElementById('statsGrid').style.display = 'none';
-            document.getElementById('controlsSection').style.display = 'none';
-            document.getElementById('parentViewContainer').style.display = 'block';
-            document.getElementById('liveBadge').style.display = 'none';
-
-            const container = document.getElementById('parentStudentCard');
-            const isPresent = student.status === 'present' || student.timestamp;
-            const statusClass = isPresent ? 'status-present' : 'status-absent';
-            const statusText = isPresent ? 'PRESENT' : 'ABSENT';
-            const timeText = student.timestamp ? formatTime(student.timestamp) : '--:--';
-
-            container.innerHTML = `
-                <div style="background: var(--glass); border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px; max-width: 500px; margin: 0 auto;">
-                    <div style="width: 100px; height: 100px; background: var(--gradient-1); border-radius: 50%; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700;">
-                        ${student.studentName.charAt(0).toUpperCase()}
-                    </div>
-                    <h2 style="margin-bottom: 10px;">${student.studentName}</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 25px;">
-                        <i class="fa-solid fa-graduation-cap"></i> ${currentSection} | 
-                        <i class="fa-solid fa-id-card"></i> ${student.studentId || key}
-                    </p>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px;">
-                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Status</div>
-                            <div class="${statusClass}" style="font-size: 1.5rem;">
-                                <i class="fa-solid ${isPresent ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-                                ${statusText}
-                            </div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px;">
-                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Scan Time</div>
-                            <div style="font-size: 1.5rem; color: var(--accent);">
-                                <i class="fa-regular fa-clock"></i>
-                                ${timeText}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; text-align: left;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-secondary);">
-                            <i class="fa-solid fa-history"></i> Recent History
-                        </h4>
-                        <div id="studentHistory">
-                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Loading history...</p>
-                        </div>
-                    </div>
-
-                    <button class="btn btn-secondary" style="margin-top: 25px; width: 100%;" onclick="resetParentView()">
-                        <i class="fa-solid fa-search"></i>
-                        Search Another Student
-                    </button>
-                </div>
-            `;
-
-            // Load student history
-            loadStudentHistory(student.studentId || key, student.studentName);
-        }
-
-        // Load Student History
-        async function loadStudentHistory(studentId, studentName) {
-            try {
-                const historyRef = ref(database, `sections/${currentSection}/history/${studentId}`);
-                const snapshot = await get(historyRef);
-                
-                const container = document.getElementById('studentHistory');
-                
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">No history available</p>';
-                    return;
-                }
-
-                const history = snapshot.val();
-                const historyArray = Object.entries(history)
-                    .sort((a, b) => new Date(b[1].timestamp) - new Date(a[1].timestamp))
-                    .slice(0, 5);
-
-                container.innerHTML = historyArray.map(([key, record]) => `
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--glass-border);">
-                        <span style="color: var(--text-secondary);">
-                            <i class="fa-regular fa-calendar"></i>
-                            ${formatDate(record.timestamp)}
-                        </span>
-                        <span style="color: var(--success); font-weight: 600;">
-                            ${formatTime(record.timestamp)}
-                        </span>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading history:', error);
-            }
-        }
-
-        // Reset Parent View
-        window.resetParentView = () => {
-            document.getElementById('parentViewContainer').style.display = 'none';
-            document.getElementById('welcomeState').style.display = 'block';
-            document.getElementById('verifyStudentName').value = '';
-            document.getElementById('verifyStudentId').value = '';
-            openSectionModal();
-        };
-
-        // Load Section Data (Teacher/Admin View)
-        function loadSectionData(section) {
-            currentSection = section;
-            
-            // Update UI
-            document.getElementById('currentSectionDisplay').textContent = section;
-            document.getElementById('sectionBtnText').textContent = section;
-            document.getElementById('welcomeState').style.display = 'none';
-            document.getElementById('attendanceTableContainer').style.display = 'block';
-            document.getElementById('statsGrid').style.display = 'grid';
-            document.getElementById('controlsSection').style.display = 'flex';
-            document.getElementById('liveBadge').style.display = 'inline-flex';
-
-            // Load data
-            const attendanceRef = ref(database, `sections/${section}/attendance`);
-            onValue(attendanceRef, (snapshot) => {
-                const data = snapshot.val();
-                sectionAttendanceData = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-                renderTable(sectionAttendanceData);
-                updateStats(section);
-            });
-
-            // Load masterlist for attendance rate calculation
-            const masterlistRef = ref(database, `sections/${section}/masterlist`);
-            onValue(masterlistRef, (snapshot) => {
-                updateAttendanceRate(section);
+        // Load Sections from Firebase
+        function loadSections() {
+            const sectionsRef = ref(database, 'sections');
+            onValue(sectionsRef, (snapshot) => {
+                sections = snapshot.val() || {};
+                renderSectionList();
+                renderSectionMenu();
             });
         }
 
-        // Render Table
-        function renderTable(data) {
-            const table = document.getElementById('attendanceTable');
+        // Render Section List (in modal)
+        function renderSectionList() {
+            const container = document.getElementById('sectionList');
+            const sectionEntries = Object.entries(sections);
             
-            if (data.length === 0) {
-                table.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-satellite-dish"></i>
-                        <h3>No scans yet</h3>
-                        <p>Waiting for students to scan...</p>
+            if (sectionEntries.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fa-solid fa-folder-open" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>No sections yet. Add your first section!</p>
                     </div>
                 `;
                 return;
             }
 
-            data.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
-
-            table.innerHTML = data.map((item, index) => `
-                <div class="table-row" style="animation-delay: ${index * 0.05}s">
-                    <div class="student-cell">
-                        <div class="student-avatar-sm">${(item.studentName || 'U').charAt(0).toUpperCase()}</div>
-                        <div class="student-info">
-                            <h4>${item.studentName || 'Unknown'}</h4>
-                            <span>ID: ${item.studentId || item.key?.substring(0, 8) || 'N/A'}</span>
+            container.innerHTML = sectionEntries.map(([id, section]) => `
+                <div class="section-item ${currentSection === id ? 'active' : ''}" data-id="${id}">
+                    <div class="section-info">
+                        <div class="section-name">${section.name}</div>
+                        <div class="section-meta">
+                            Grade ${section.grade} • Created ${formatDate(section.createdAt)}
                         </div>
                     </div>
-                    <div>
-                        <span class="status-present">
-                            <i class="fa-solid fa-check-circle"></i> PRESENT
-                        </span>
-                    </div>
-                    <div class="time-cell">
-                        <i class="fa-regular fa-clock"></i>
-                        ${formatTime(item.timestamp || item.time)}
-                    </div>
-                    <div class="action-cell">
-                        <button class="action-btn-sm" onclick="deleteRecord('${item.key}')" title="Move to trash">
+                    <div class="section-actions">
+                        <button class="section-btn-sm" onclick="editSection('${id}')" title="Edit">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="section-btn-sm delete" onclick="deleteSection('${id}')" title="Delete">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -1736,81 +1584,293 @@
             `).join('');
         }
 
-        // Update Statistics
-        function updateStats(section) {
-            const attendanceRef = ref(database, `sections/${section}/attendance`);
-            onValue(attendanceRef, (snapshot) => {
-                const data = snapshot.val();
-                const count = data ? Object.keys(data).length : 0;
-                
-                // Animate value
-                animateValue('totalScans', parseInt(document.getElementById('totalScans').textContent), count, 1000);
-                
-                // Unique students
-                const unique = data ? new Set(Object.values(data).map(d => d.studentId || d.studentName)).size : 0;
-                animateValue('uniqueStudents', parseInt(document.getElementById('uniqueStudents').textContent), unique, 1000);
-                
-                // Last scan
-                if (data) {
-                    const entries = Object.values(data);
-                    const last = entries[entries.length - 1];
-                    if (last) {
-                        document.getElementById('lastScan').textContent = formatTime(last.timestamp || last.time);
-                    }
-                }
-            });
+        // Render Section Menu (sidebar)
+        function renderSectionMenu() {
+            const container = document.getElementById('sectionMenu');
+            container.innerHTML = Object.entries(sections).map(([id, section]) => `
+                <div class="section-menu-item ${currentSection === id ? 'active' : ''}" onclick="selectSection('${id}')">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>${section.name}</span>
+                </div>
+            `).join('');
         }
 
-        // Update Attendance Rate
-        async function updateAttendanceRate(section) {
-            try {
-                const [attendanceSnap, masterlistSnap] = await Promise.all([
-                    get(ref(database, `sections/${section}/attendance`)),
-                    get(ref(database, `sections/${section}/masterlist`))
-                ]);
-
-                const presentCount = attendanceSnap.exists() ? Object.keys(attendanceSnap.val()).length : 0;
-                const totalStudents = masterlistSnap.exists() ? Object.keys(masterlistSnap.val()).length : 0;
-                
-                const rate = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
-                document.getElementById('attendanceRate').textContent = rate + '%';
-            } catch (error) {
-                console.error('Error calculating rate:', error);
-            }
-        }
-
-        // Filter Table
-        window.filterTable = () => {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = sectionAttendanceData.filter(item => 
-                (item.studentName || '').toLowerCase().includes(searchTerm) ||
-                (item.studentId || '').toLowerCase().includes(searchTerm)
-            );
-            renderTable(filtered);
+        // Section Management Functions
+        window.showAddSectionForm = () => {
+            editingSectionId = null;
+            document.getElementById('formTitle').textContent = 'Add New Section';
+            document.getElementById('gradeLevel').value = '7';
+            document.getElementById('sectionNameInput').value = '';
+            document.getElementById('sectionIdInput').value = '';
+            document.getElementById('sectionEditForm').classList.add('show');
+            updateSectionIdPreview();
         };
 
-        // Delete Record
-        window.deleteRecord = async (key) => {
-            if (!confirm('Move this record to trash?')) return;
-            
+        window.hideSectionForm = () => {
+            document.getElementById('sectionEditForm').classList.remove('show');
+        };
+
+        // Auto-generate section ID
+        document.getElementById('gradeLevel').addEventListener('change', updateSectionIdPreview);
+        document.getElementById('sectionNameInput').addEventListener('input', updateSectionIdPreview);
+
+        function updateSectionIdPreview() {
+            const grade = document.getElementById('gradeLevel').value;
+            const name = document.getElementById('sectionNameInput').value.trim();
+            const id = name ? `${grade}-${name.replace(/\s+/g, '-')}` : '';
+            document.getElementById('sectionIdInput').value = id;
+        }
+
+        window.saveSection = async () => {
+            const grade = document.getElementById('gradeLevel').value;
+            const name = document.getElementById('sectionNameInput').value.trim();
+            const id = document.getElementById('sectionIdInput').value;
+
+            if (!name || !id) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
             try {
-                const item = sectionAttendanceData.find(d => d.key === key);
-                if (item) {
-                    await set(ref(database, `sections/${currentSection}/trash/${key}`), {
-                        ...item,
-                        deletedAt: new Date().toISOString(),
-                        deletedBy: currentUser?.email || 'unknown'
-                    });
-                    await remove(ref(database, `sections/${currentSection}/attendance/${key}`));
-                    showToast('Record moved to trash', 'warning');
+                const sectionData = {
+                    grade: grade,
+                    name: id, // Full ID like "12-Sincerity"
+                    displayName: name, // Just "Sincerity"
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUser.email
+                };
+
+                if (editingSectionId) {
+                    // Update existing
+                    await update(ref(database, `sections/${editingSectionId}`), sectionData);
+                    showToast('Section updated!', 'success');
+                } else {
+                    // Create new
+                    await set(ref(database, `sections/${id}`), sectionData);
+                    
+                    // Initialize section structure
+                    await set(ref(database, `sections/${id}/attendance`), {});
+                    await set(ref(database, `sections/${id}/masterlist`), {});
+                    await set(ref(database, `sections/${id}/settings`), { autoArchive: true });
+                    
+                    showToast('Section created!', 'success');
+                }
+
+                hideSectionForm();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        window.editSection = (id) => {
+            const section = sections[id];
+            if (!section) return;
+
+            editingSectionId = id;
+            document.getElementById('formTitle').textContent = 'Edit Section';
+            document.getElementById('gradeLevel').value = section.grade;
+            document.getElementById('sectionNameInput').value = section.displayName || section.name.split('-')[1];
+            document.getElementById('sectionIdInput').value = section.name;
+            document.getElementById('sectionEditForm').classList.add('show');
+        };
+
+        window.deleteSection = async (id) => {
+            if (!confirm(`Delete section "${sections[id]?.name}"? This will remove all attendance data!`)) return;
+
+            try {
+                await remove(ref(database, `sections/${id}`));
+                showToast('Section deleted', 'warning');
+                if (currentSection === id) {
+                    currentSection = null;
+                    showWelcomeState();
                 }
             } catch (error) {
                 showToast(error.message, 'error');
             }
         };
 
+        // Select Section
+        window.selectSection = (id) => {
+            currentSection = id;
+            const section = sections[id];
+            
+            // Update UI
+            document.getElementById('currentSectionDisplay').textContent = section.name;
+            document.getElementById('sectionBtnText').textContent = section.name;
+            document.getElementById('contentSectionName').textContent = section.name;
+            document.getElementById('dashboardGrid').style.display = 'grid';
+            document.getElementById('welcomeState').style.display = 'none';
+            
+            // Update active states
+            document.querySelectorAll('.section-menu-item').forEach(item => {
+                item.classList.toggle('active', item.getAttribute('onclick').includes(id));
+            });
+
+            // Load attendance
+            loadAttendance(id);
+        };
+
+        function loadAttendance(sectionId) {
+            const attendanceRef = ref(database, `sections/${sectionId}/attendance`);
+            onValue(attendanceRef, (snapshot) => {
+                const data = snapshot.val();
+                const attendanceList = data ? Object.entries(data).map(([key, val]) => ({ key, ...val })) : [];
+                renderAttendanceTable(attendanceList);
+                updateStats(sectionId, attendanceList);
+            });
+        }
+
+        function renderAttendanceTable(data) {
+            const table = document.getElementById('attendanceTable');
+            
+            if (data.length === 0) {
+                table.innerHTML = `
+                    <div class="empty-state" style="padding: 40px;">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                        <p>No attendance records yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            table.innerHTML = data.map(item => `
+                <div class="table-row">
+                    <div class="student-cell">
+                        <div class="student-avatar">${(item.studentName || 'U')[0].toUpperCase()}</div>
+                        <div class="student-info">
+                            <h4>${item.studentName || 'Unknown'}</h4>
+                            <span>ID: ${item.studentId || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="status-badge status-present">
+                            <i class="fa-solid fa-check-circle"></i> PRESENT
+                        </span>
+                    </div>
+                    <div class="time-display">
+                        <i class="fa-regular fa-clock"></i>
+                        ${formatTime(item.timestamp)}
+                    </div>
+                    <div class="action-btns">
+                        <button class="action-icon" onclick="deleteAttendance('${item.key}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats(sectionId, attendanceList) {
+            const present = attendanceList.length;
+            
+            // Get masterlist count for total students
+            get(ref(database, `sections/${sectionId}/masterlist`)).then(snapshot => {
+                const masterlist = snapshot.val() || {};
+                const total = Object.keys(masterlist).length;
+                const absent = total - present;
+                const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+                document.getElementById('statPresent').textContent = present;
+                document.getElementById('statAbsent').textContent = absent > 0 ? absent : 0;
+                document.getElementById('statRate').textContent = rate + '%';
+                document.getElementById('statTotal').textContent = total;
+            });
+        }
+
+        // QR Scanner Functions
+        window.startQRScanner = () => {
+            closeSectionModal();
+            document.getElementById('qrContainer').style.display = 'block';
+            document.getElementById('sectionList').style.display = 'none';
+            document.querySelector('.section-header').style.display = 'none';
+            openSectionModal();
+
+            qrScanner = new Html5Qrcode("qr-reader");
+            qrScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                onScanError
+            );
+        };
+
+        window.stopQRScanner = () => {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    qrScanner = null;
+                    document.getElementById('qrContainer').style.display = 'none';
+                    document.getElementById('sectionList').style.display = 'grid';
+                    document.querySelector('.section-header').style.display = 'flex';
+                    document.getElementById('scanResult').classList.remove('show');
+                });
+            }
+        };
+
+        async function onScanSuccess(decodedText) {
+            try {
+                // QR Code format: sectionId|studentId|studentName
+                // Example: "12-Sincerity|2024001|Juan Dela Cruz"
+                const parts = decodedText.split('|');
+                
+                if (parts.length >= 2) {
+                    const [sectionId, studentId, studentName] = parts;
+                    
+                    // Verify section exists
+                    if (!sections[sectionId]) {
+                        showToast(`Section "${sectionId}" not found!`, 'error');
+                        return;
+                    }
+
+                    // Record attendance
+                    const timestamp = new Date().toISOString();
+                    const newRef = push(ref(database, `sections/${sectionId}/attendance`));
+                    
+                    await set(newRef, {
+                        studentId: studentId,
+                        studentName: studentName || 'Unknown',
+                        timestamp: timestamp,
+                        type: 'qr-scan',
+                        scannedBy: currentUser?.email || 'system'
+                    });
+
+                    // Show success
+                    document.getElementById('scanDetails').innerHTML = `
+                        <strong>Section:</strong> ${sectionId}<br>
+                        <strong>Student:</strong> ${studentName || studentId}<br>
+                        <strong>Time:</strong> ${formatTime(timestamp)}
+                    `;
+                    document.getElementById('scanResult').classList.add('show');
+                    
+                    // Auto-select section
+                    selectSection(sectionId);
+                    
+                    showToast('Attendance recorded via QR!', 'success');
+                    
+                    // Stop scanner after successful scan
+                    setTimeout(() => {
+                        stopQRScanner();
+                        closeSectionModal();
+                    }, 2000);
+                } else {
+                    showToast('Invalid QR code format', 'error');
+                }
+            } catch (error) {
+                showToast('Error processing QR: ' + error.message, 'error');
+            }
+        }
+
+        function onScanError(error) {
+            // console.warn(`QR error: ${error}`);
+        }
+
         // Manual Attendance
         window.openManualModal = () => {
+            if (!currentSection) {
+                showToast('Please select a section first', 'error');
+                return;
+            }
             document.getElementById('manualModal').classList.add('active');
         };
 
@@ -1825,27 +1885,27 @@
             const studentId = document.getElementById('manualId').value.trim();
 
             if (!name || !studentId || !currentSection) {
-                showToast('Please fill in all fields and select a section', 'error');
+                showToast('Please fill in all fields', 'error');
                 return;
             }
 
             try {
-                const newRef = push(ref(database, `sections/${currentSection}/attendance`));
                 const timestamp = new Date().toISOString();
+                const newRef = push(ref(database, `sections/${currentSection}/attendance`));
                 
                 await set(newRef, {
-                    studentName: name,
                     studentId: studentId,
+                    studentName: name,
                     timestamp: timestamp,
                     type: 'manual',
-                    recordedBy: currentUser?.email || 'unknown',
-                    status: 'present'
+                    recordedBy: currentUser?.email || 'unknown'
                 });
 
-                // Also save to history
-                await set(ref(database, `sections/${currentSection}/history/${studentId}/${newRef.key}`), {
-                    timestamp: timestamp,
-                    status: 'present'
+                // Add to masterlist if not exists
+                await set(ref(database, `sections/${currentSection}/masterlist/${studentId}`), {
+                    studentId: studentId,
+                    studentName: name,
+                    addedAt: timestamp
                 });
 
                 showToast('Attendance recorded!', 'success');
@@ -1855,45 +1915,70 @@
             }
         };
 
-        // Export Attendance
-        window.exportAttendance = () => {
-            if (!currentSection || sectionAttendanceData.length === 0) {
-                showToast('No data to export', 'error');
+        window.deleteAttendance = async (key) => {
+            if (!confirm('Delete this record?')) return;
+            
+            try {
+                await remove(ref(database, `sections/${currentSection}/attendance/${key}`));
+                showToast('Record deleted', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        window.exportSectionData = () => {
+            if (!currentSection) {
+                showToast('Select a section first', 'error');
                 return;
             }
 
-            const csvContent = [
-                ['Student Name', 'Student ID', 'Time', 'Date', 'Type'].join(','),
-                ...sectionAttendanceData.map(item => [
-                    item.studentName || 'Unknown',
-                    item.studentId || 'N/A',
-                    formatTime(item.timestamp || item.time),
-                    formatDate(item.timestamp || item.time),
-                    item.type || 'scan'
-                ].join(','))
-            ].join('\n');
+            const section = sections[currentSection];
+            const attendanceRef = ref(database, `sections/${currentSection}/attendance`);
+            
+            get(attendanceRef).then(snapshot => {
+                const data = snapshot.val() || {};
+                const rows = Object.values(data);
+                
+                if (rows.length === 0) {
+                    showToast('No data to export', 'error');
+                    return;
+                }
 
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `attendance_${currentSection}_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            showToast('Attendance exported!', 'success');
+                const csv = [
+                    ['Student ID', 'Student Name', 'Timestamp', 'Type', 'Recorded By'].join(','),
+                    ...rows.map(r => [
+                        r.studentId,
+                        r.studentName,
+                        r.timestamp,
+                        r.type,
+                        r.scannedBy || r.recordedBy || 'system'
+                    ].join(','))
+                ].join('\n');
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `attendance_${section.name}_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                
+                showToast('Data exported!', 'success');
+            });
         };
 
         // Auth Functions
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
             const btn = document.getElementById('loginBtn');
-
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div>';
 
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(
+                    auth,
+                    document.getElementById('loginEmail').value,
+                    document.getElementById('loginPassword').value
+                );
                 showToast('Welcome back!', 'success');
             } catch (error) {
                 showAuthError(error.message);
@@ -1904,25 +1989,28 @@
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('regName').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
             const btn = document.getElementById('registerBtn');
-
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div>';
 
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await updateProfile(userCredential.user, { displayName: name });
+                const userCredential = await createUserWithEmailAndPassword(
+                    auth,
+                    document.getElementById('regEmail').value,
+                    document.getElementById('regPassword').value
+                );
                 
-                await set(ref(database, 'users/' + userCredential.user.uid), {
-                    name: name,
-                    email: email,
-                    role: 'parent',
+                await updateProfile(userCredential.user, {
+                    displayName: document.getElementById('regName').value
+                });
+
+                await set(ref(database, `users/${userCredential.user.uid}`), {
+                    name: document.getElementById('regName').value,
+                    email: document.getElementById('regEmail').value,
+                    role: 'teacher',
                     createdAt: new Date().toISOString()
                 });
-                
+
                 showToast('Account created!', 'success');
             } catch (error) {
                 showAuthError(error.message);
@@ -1931,38 +2019,15 @@
             }
         });
 
-        window.googleSignIn = async () => {
-            try {
-                const result = await signInWithPopup(auth, googleProvider);
-                const user = result.user;
-                
-                await set(ref(database, 'users/' + user.uid), {
-                    name: user.displayName,
-                    email: user.email,
-                    role: 'parent',
-                    createdAt: new Date().toISOString()
-                });
-                
-                showToast('Welcome!', 'success');
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
-        };
-
         window.toggleAuth = () => {
             if (currentUser) {
-                signOut(auth).then(() => {
-                    showToast('Signed out', 'success');
-                    resetToInitialState();
-                });
+                signOut(auth).then(() => showToast('Signed out', 'success'));
             }
         };
 
-        // UI Functions
         window.switchTab = (tab) => {
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            
             event.target.classList.add('active');
             document.getElementById(tab + 'Form').classList.add('active');
             document.getElementById('authError').classList.remove('show');
@@ -1977,61 +2042,17 @@
 
         window.openSectionModal = () => {
             document.getElementById('sectionModal').classList.add('active');
-            // Reset form visibility
-            document.getElementById('parentVerificationForm').style.display = 'none';
-            document.getElementById('sectionGrid').style.display = 'grid';
-            document.querySelectorAll('.section-btn').forEach(btn => btn.classList.remove('active'));
+            stopQRScanner();
         };
 
         window.closeSectionModal = () => {
             document.getElementById('sectionModal').classList.remove('active');
+            stopQRScanner();
         };
 
-        function resetToInitialState() {
-            currentSection = null;
-            currentRole = null;
+        function showWelcomeState() {
+            document.getElementById('dashboardGrid').style.display = 'none';
             document.getElementById('welcomeState').style.display = 'block';
-            document.getElementById('attendanceTableContainer').style.display = 'none';
-            document.getElementById('statsGrid').style.display = 'none';
-            document.getElementById('controlsSection').style.display = 'none';
-            document.getElementById('parentViewContainer').style.display = 'none';
-            document.getElementById('currentSectionDisplay').textContent = 'No Section Selected';
-            document.getElementById('sectionBtnText').textContent = 'Select Section';
-        }
-
-        // Helper Functions
-        function formatTime(timestamp) {
-            if (!timestamp) return '--:--';
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-        }
-
-        function formatDate(timestamp) {
-            if (!timestamp) return '--/--/--';
-            const date = new Date(timestamp);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        }
-
-        function animateValue(id, start, end, duration) {
-            const obj = document.getElementById(id);
-            const range = end - start;
-            const minTimer = 50;
-            let stepTime = Math.abs(Math.floor(duration / range));
-            stepTime = Math.max(stepTime, minTimer);
-            let startTime = new Date().getTime();
-            let endTime = startTime + duration;
-            let timer;
-
-            function run() {
-                let now = new Date().getTime();
-                let remaining = Math.max((endTime - now) / duration, 0);
-                let value = Math.round(end - (remaining * range));
-                obj.textContent = value;
-                if (value == end) clearInterval(timer);
-            }
-            
-            timer = setInterval(run, stepTime);
-            run();
         }
 
         function showAuthError(message) {
@@ -2049,18 +2070,14 @@
             const icons = {
                 success: 'fa-check-circle',
                 error: 'fa-circle-exclamation',
-                warning: 'fa-triangle-exclamation',
-                info: 'fa-info-circle'
+                warning: 'fa-triangle-exclamation'
             };
             
             toast.innerHTML = `
-                <div class="toast-icon">
+                <div class="toast-icon" style="background: rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <i class="fa-solid ${icons[type]}"></i>
                 </div>
-                <div>
-                    <div style="font-weight: 600; margin-bottom: 2px;">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);">${message}</div>
-                </div>
+                <span>${message}</span>
             `;
             
             container.appendChild(toast);
@@ -2072,6 +2089,24 @@
             }, 4000);
         };
 
+        function formatTime(timestamp) {
+            if (!timestamp) return '--:--';
+            return new Date(timestamp).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '--/--/--';
+            return new Date(timestamp).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Create particles
         function createParticles() {
             const container = document.getElementById('particles');
             for (let i = 0; i < 50; i++) {
@@ -2084,13 +2119,11 @@
             }
         }
 
+        createParticles();
+
         // Close modals on backdrop click
         document.getElementById('manualModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) closeManualModal();
-        });
-
-        document.getElementById('sectionModal').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) closeSectionModal();
         });
     </script>
 </body>
