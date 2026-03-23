@@ -1986,7 +1986,7 @@
                                 </span>
                             </td>
                             <td>${formatTime(record.timestamp)}</td>
-                            <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -3973,4 +3973,331 @@
                                     ${record.status.toUpperCase()}
                                 </span>
                             </td>
-                            <td>${formatTime(record.timestamp)}</td>
+                                                        <td>${record.remarks || '-'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                document.getElementById('lookupResult').style.display = 'block';
+                
+            } catch (error) {
+                showToast('Error looking up student: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ==========================================
+        // HISTORY & TRASH FUNCTIONS
+        // ==========================================
+        window.loadHistory = async function() {
+            const sectionId = document.getElementById('historySectionSelect').value;
+            const startDate = document.getElementById('historyStartDate').value;
+            const endDate = document.getElementById('historyEndDate').value;
+            
+            if (!startDate || !endDate) {
+                showToast('Please select date range', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                let allRecords = [];
+                
+                if (sectionId) {
+                    const attendanceRef = ref(database, `sections/${sectionId}/attendance`);
+                    const snapshot = await get(attendanceRef);
+                    const data = snapshot.val() || {};
+                    allRecords = Object.entries(data).map(([key, val]) => ({...val, id: key, section: sectionId}));
+                } else {
+                    const sectionsRef = ref(database, 'sections');
+                    const snapshot = await get(sectionsRef);
+                    const sections = snapshot.val() || {};
+                    
+                    for (const [secId, secData] of Object.entries(sections)) {
+                        if (secData.attendance) {
+                            const records = Object.entries(secData.attendance).map(([key, val]) => ({...val, id: key, section: secId}));
+                            allRecords = allRecords.concat(records);
+                        }
+                    }
+                }
+
+                const filtered = allRecords.filter(r => {
+                    return r.date >= startDate && r.date <= endDate;
+                }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                renderHistoryTable(filtered);
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderHistoryTable(records) {
+            if (records.length === 0) {
+                document.getElementById('historyTableContainer').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                        <h3>No Records Found</h3>
+                        <p>No attendance records for the selected date range</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Section</th>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Method</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            records.forEach(record => {
+                const statusClass = `status-${record.status}`;
+                html += `
+                    <tr>
+                        <td>${formatDate(record.date)}</td>
+                        <td>${record.section.replace('-', ' - ')}</td>
+                        <td>${record.studentName}</td>
+                        <td><span class="status-badge ${statusClass}">${record.status.toUpperCase()}</span></td>
+                        <td>${record.method || 'manual'}</td>
+                        <td>${formatTime(record.timestamp)}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('historyTableContainer').innerHTML = html;
+        }
+
+        window.loadTrash = async function() {
+            try {
+                const trashRef = ref(database, 'trash');
+                const snapshot = await get(trashRef);
+                const trash = snapshot.val() || {};
+                
+                let allDeleted = [];
+                Object.entries(trash).forEach(([section, students]) => {
+                    Object.entries(students).forEach(([lrn, data]) => {
+                        allDeleted.push({...data, section, lrn});
+                    });
+                });
+
+                if (allDeleted.length === 0) {
+                    document.getElementById('trashTableContainer').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-trash"></i>
+                            <h3>Trash is Empty</h3>
+                            <p>Deleted attendance records will appear here</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Section</th>
+                                <th>Deleted By</th>
+                                <th>Deleted At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                allDeleted.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="student-cell">
+                                    <div class="student-avatar">${item.name.charAt(0)}</div>
+                                    <div class="student-info">
+                                        <h4>${item.name}</h4>
+                                        <span>LRN: ${item.lrn}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${item.section.replace('-', ' - ')}</td>
+                            <td>${item.deletedBy}</td>
+                            <td>${formatDateTime(item.deletedAt)}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button onclick="restoreStudent('${item.section}', '${item.lrn}')" class="btn-icon" title="Restore">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                    <button onclick="permanentDelete('${item.section}', '${item.lrn}')" class="btn-icon delete" title="Delete Forever">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('trashTableContainer').innerHTML = html;
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        window.restoreStudent = async function(section, lrn) {
+            try {
+                const trashRef = ref(database, `trash/${section}/${lrn}`);
+                const snapshot = await get(trashRef);
+                const data = snapshot.val();
+                
+                if (data) {
+                    const { deletedAt, deletedBy, originalSection, ...studentData } = data;
+                    const studentRef = ref(database, `sections/${section}/masterlist/${lrn}`);
+                    await set(studentRef, studentData);
+                    await remove(trashRef);
+                    showToast('Student restored successfully', 'success');
+                    loadTrash();
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        window.permanentDelete = async function(section, lrn) {
+            if (!confirm('Permanently delete this student? This cannot be undone.')) return;
+            
+            try {
+                await remove(ref(database, `trash/${section}/${lrn}`));
+                showToast('Student permanently deleted', 'success');
+                loadTrash();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        window.showPage = function(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageName + 'Page').classList.add('active');
+            
+            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (pageName === 'trash') loadTrash();
+        }
+
+        window.togglePassword = function(inputId) {
+            const input = document.getElementById(inputId);
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+        }
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        window.exportToExcel = function() {
+            if (!currentSection) {
+                showToast('Select a section first', 'warning');
+                return;
+            }
+            
+            const table = document.querySelector('#attendanceTableContainer table');
+            if (!table) {
+                showToast('No data to export', 'warning');
+                return;
+            }
+
+            let csv = 'Student Name,LRN,Status,Time\n';
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const name = cells[0].querySelector('h4').textContent;
+                const lrn = cells[0].querySelector('span').textContent.replace('LRN: ', '');
+                const status = cells[1].textContent.trim();
+                const time = cells[2].textContent.trim();
+                csv += `"${name}","${lrn}","${status}","${time}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_${currentSection}_${document.getElementById('dateFilter').value}.csv`;
+            a.click();
+            showToast('Exported to CSV', 'success');
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '--:--';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '--';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatDateTime(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-exclamation-circle' : 
+                        type === 'warning' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+            
+            toast.innerHTML = `
+                <i class="fa-solid ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+
+        // Initialize dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('historyEndDate').value = today;
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        document.getElementById('historyStartDate').value = lastMonth.toISOString().split('T')[0];
+
+    </script>
+</body>
+</html>
+                        
