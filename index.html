@@ -1985,7 +1985,8 @@
                                     ${record.status.toUpperCase()}
                                 </span>
                             </td>
-                            <td>${formatTime(record.timestamp)}</td>                            <td>${record.remarks || '-'}</td>
+                            <td>${formatTime(record.timestamp)}</td>
+                                                        <td>${record.remarks || '-'}</td>
                         `;
                         tbody.appendChild(row);
                     });
